@@ -1,0 +1,25 @@
+A lightweight and modular framework for performing field simulations in cosmology. This framework implements various sample field equations on both CPU and GPU (CUDA), offering choices for numerical methods and simulation outputs. The codebase is used for studying free-streaming of wave dark matter. See arXiv:XXXX.XXXX.
+
+-----------------------------------------------------------
+Dependencies for the project:
+
+A C++ compiler supporting C++20. (I use g++ 12.2.0.)
+
+Required dependency:
+fftw3
+
+Optional dependency:
+CUDA toolkit
+
+External libraries included with the codebase (inside "external" directory):
+Eigen 3
+boost 1.84
+
+-----------------------------------------------------------
+To compile the project:
+
+# If you don't have CUDA, run the following line. (You will not be able to compile code with equations prefixed Cuda.  e.g. CudaComovingCurvatureEquationInFRW)
+make disable-cuda=true
+
+# If CUDA is available, simply run make
+make
