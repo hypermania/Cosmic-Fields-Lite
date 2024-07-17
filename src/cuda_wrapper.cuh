@@ -36,20 +36,15 @@ extern template class thrust::device_ptr<double>;
 extern template thrust::device_ptr<double> thrust::for_each_n(const thrust::detail::execution_policy_base<thrust::cuda_cub::tag> &, thrust::device_ptr<double>, unsigned long, thrust::detail::device_generate_functor<thrust::detail::fill_functor<double>>);
 extern template eigen_iterator thrust::copy(const thrust::detail::execution_policy_base<thrust::cuda_cub::cross_system<thrust::cuda_cub::tag, thrust::system::cpp::detail::tag>> &, thrust_const_iterator, thrust_const_iterator, eigen_iterator);
 
-//extern template void thrust::system::detail::generic::get_value(thrust::execution_policy<thrust::cuda_cub::tag> &, thrust::device_ptr<double>);
-//extern template class thrust::reference<double, thrust::device_ptr<double>, thrust::device_reference<double>>;
-//extern template double thrust::system::detail::generic::get_value<thrust::cuda_cub::tag, thrust::device_ptr<double>>;
-
 extern template thrust_iterator thrust::copy(eigen_iterator, eigen_iterator, thrust_iterator);
 extern template eigen_iterator thrust::copy(thrust_iterator, thrust_iterator, eigen_iterator);
 
-Eigen::VectorXd copy_vector(const thrust::device_vector<double> &in);
+//Eigen::VectorXd copy_vector(const thrust::device_vector<double> &in);
 void copy_vector(Eigen::VectorXd &out, const thrust::device_vector<double> &in);
 //void copy_vector(Eigen::VectorXd &out, const Eigen::VectorXd &in);
 
 
 void show_gpu_memory_usage(void);
-void test_texture(void);
 
 /*
   Wrapper for 3D cufftPlan3d.

@@ -150,28 +150,27 @@ inline auto perturbed_grf_and_comoving_curvature_fft =
 	16 * pow(pi, 4) * pow(eta_i, 4)) *
        sin((4 * pi * eta_i) / (sqrt(3) * param.L)));
     Spectrum P_R = scale_invariant_spectrum_3d(param.N, param.L, A_s);
-    Spectrum P_R_with_cutoff = [P_R](double k){ return k <= 0.5 ? P_R(k) : 0.0; };
-    Eigen::VectorXd R = generate_gaussian_random_field(param.N, param.L, P_R_with_cutoff);
+    
+    // Manual cutoff for P_R at around horizon. The effect of imposing this cutoff is negligible.
+    // Spectrum P_R_with_cutoff = [P_R](double k){ return k <= 0.5 ? P_R(k) : 0.0; };
+    
+    Eigen::VectorXd R = generate_gaussian_random_field(param.N, param.L, P_R);
     // std::cout << "A_s = " << A_s << '\n';
 
-    // Calculate initial gravitational potential Psi
+    // Calculate initial gravitational potential Psi.
+    // Convention for potentials: \mathcal{R}_k = (3 / 2) \Psi_k for superhorizon.
     auto kernel = [eta_i](double k){
 		    return k == 0.0 ? 0.0 : (6 * sqrt(3) * (-((k * eta_i * cos((k * eta_i) / sqrt(3))) / sqrt(3)) + sin((k * eta_i) / sqrt(3)))) / (pow(k, 3) * pow(eta_i, 3));
 		  };
     auto fft_wrapper = fftwWrapper(param.N);
     Eigen::VectorXd Psi = compute_field_with_scaled_fourier_modes(param.N, param.L, R, kernel, fft_wrapper);
 
-    // Calculate \varphi^2, \dot{\varphi}^2 perturbations as a multiple of R (comoving curvature perturbation)
-    // See (C.14), (C.15) and (D.11) in paper
-    // Convention for potentials: -\zeta = \mathcal{R} = (3 / 2) \Psi
+    // Calculate \varphi^2, \dot{\varphi}^2 perturbations as a multiple of Psi.
+    // See Eqn (3.17) of paper.
+    // There is an extra factor of 0.5 in front since "generate_inhomogeneous_gaussian_random_field" use exp(2\Psi) ~ 1 + 2 \Psi for variance perturbation convention.
     double v = param.k_ast / (param.a1 * param.m);
-    //double alpha_varphi_sqr = - 1.5 * (4.0 / 3.0 + (1.0 / (v*v*v)) * (std::atan(v) - v));
-    //double alpha_dot_varphi_sqr = 0.5 / (1 + 0.6 * v * v);
-    double alpha_varphi_sqr = -2.26;
-    double alpha_dot_varphi_sqr = 0.13;
-    
-    // Adiabatic initial condition for relativistic, superhorizon modes. See Baumann (6.152).
-    //Eigen::VectorXd delta_r = - (4.0 / 3.0) * R;
+    double alpha_varphi_sqr = 0.5 * (- 3 * pow(4*pow(v,2)+5, 2)) / (12*pow(v,4) + 50*pow(v,2) + 50);
+    double alpha_dot_varphi_sqr = 0.5 * (25 - 20*pow(v,2)) / (12*pow(v,4) + 50*pow(v,2) + 50);
     
     Spectrum P_f = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.varphi_std_dev, param.k_ast, 0);
     Spectrum P_dtf = to_deriv_spectrum(param.m, P_f);
@@ -183,6 +182,7 @@ inline auto perturbed_grf_and_comoving_curvature_fft =
     ALGORITHM_NAMESPACE::copy(varphi.begin(), varphi.end(), state.begin());
     ALGORITHM_NAMESPACE::copy(dt_varphi.begin(), dt_varphi.end(), state.begin() + varphi.size());
 
+    // Save the comoving curvature perturbation for reference
     {
       decltype(workspace.state) R_dvec(R.size());
       ALGORITHM_NAMESPACE::copy(R.begin(), R.end(), R_dvec.begin());
@@ -191,27 +191,6 @@ inline auto perturbed_grf_and_comoving_curvature_fft =
   };
 
 
-// TODO
-// Initialize a field varphi with scale invariant comoving curvature perturbation delta and its time derivative dt_delta.
-/*
-inline auto perturbed_grf_in_radiation_domination =
-  [](const auto param, auto &workspace) {
-    Spectrum P_Psi = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
-    Spectrum P_f = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.varphi_std_dev, param.k_ast, 0);
-    Spectrum P_dtf = to_deriv_spectrum(param.m, P_f);
-    Eigen::VectorXd Psi = generate_gaussian_random_field(param.N, param.L, P_Psi);
-    Eigen::VectorXd varphi_plus = generate_inhomogeneous_gaussian_random_field(param.N, param.L, Psi, P_f);
-    Eigen::VectorXd varphi_minus = generate_inhomogeneous_gaussian_random_field(param.N, param.L, -Psi, P_f);
-    //Eigen::VectorXd varphi_minus = generate_gaussian_random_field(param.N, param.L, P_f);
-    Eigen::VectorXd varphi = sqrt(0.5) * (varphi_plus + varphi_minus);
-    Eigen::VectorXd dt_varphi = sqrt(0.5) * param.m * (varphi_plus - varphi_minus);
-    
-    auto &state = workspace.state;
-    state.resize(varphi.size() + dt_varphi.size());
-    ALGORITHM_NAMESPACE::copy(varphi.begin(), varphi.end(), state.begin());
-    ALGORITHM_NAMESPACE::copy(dt_varphi.begin(), dt_varphi.end(), state.begin() + varphi.size());
-  };
-*/
 
 /*
   Initialize a homogeneous field with amplitude f and time derivative dt_f.
