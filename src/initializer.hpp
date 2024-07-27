@@ -6,13 +6,14 @@
 #ifndef INITIALIZER_HPP
 #define INITIALIZER_HPP
 
+#include "fdm3d.hpp"
 #include "random_field.hpp"
-#include "field_booster.hpp"
-#include "param.hpp"
-#include "physics.hpp"
 #include "fftw_wrapper.hpp"
-#include "dispatcher.hpp"
 #include "special_function.hpp"
+//#include "dispatcher.hpp"
+//#include "field_booster.hpp"
+//#include "param.hpp"
+//#include "physics.hpp"
 
 #ifndef DISABLE_CUDA
 #include <thrust/device_vector.h>

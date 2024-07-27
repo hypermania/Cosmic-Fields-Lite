@@ -5,17 +5,11 @@
 #ifndef RANDOM_FIELD_HPP
 #define RANDOM_FIELD_HPP
 
-#include <cstdlib>
-#include <cassert>
-#include <numbers>
-#include <iostream>
-#include <vector>
-#include <complex>
+#include "Eigen/Dense"
+
+#include <functional>
 #include <random>
-
-
-#include "utility.hpp"
-#include "fdm3d.hpp"
+#include <vector>
 
 
 // A self-initializing random number generator for standard normal distribution

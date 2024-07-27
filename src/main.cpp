@@ -9,6 +9,8 @@
 #include <string>
 #include <filesystem>
 
+#include "Eigen/Dense"
+
 #include "param.hpp"
 #include "initializer.hpp"
 #include "random_field.hpp"
@@ -33,123 +35,52 @@
 // You can add new params for other simulations.
 struct MyParam {
   // lattice params
-  long long int N = 384;
-  double L = 384;
+  long long int N;
+  double L;
   // ULDM params
-  double m = 1.0;
-  double lambda = 0;
-  double f_a = 10.0;
-  double k_ast = 0.5;
-  double k_Psi = 0.1;
-  double varphi_std_dev = 0.1;
-  double Psi_std_dev = 0.15;
+  double m;
+  double lambda;
+  double f_a;
+  double k_ast;
+  double k_Psi;
+  double varphi_std_dev;
+  double Psi_std_dev;
   // FRW metric params
-  double a1 = 1.0;
-  double H1 = 0.1;
-  double t1 = 1.0 / (2 * 0.1);
+  double a1;
+  double H1;
+  double t1;
   // Solution record params
-  double t_start = 1.0 / (2 * 0.1);
-  double t_end = 1.0 / (2 * 0.1) + (pow(3.0 / 1.0, 2) - 1.0) / (2 * 0.1);
-  double t_interval = 0.1;
+  double t_start;
+  double t_end;
+  double t_interval;
   // Numerical method parameter
-  double delta_t = 0.1;
+  double delta_t;
   // Psi approximation parameter (the size of the grid storing Psi)
-  long long int M = 384 / 3;
+  long long int M;
   // Params for adding fluctuations on a homogeneous background
-  double f = 30;
-  double delta_varphi_std_dev = 0.001;
-  double k_delta_varphi = 1.0;
+  double f;
+  double delta_varphi_std_dev;
+  double k_delta_varphi;
 };
 
-void test_wkb()
-{
-  using namespace Eigen;
-  using namespace boost::numeric::odeint;
-  
-  // Set the seed for PRNG for consistency
-  RandomNormal::set_generator_seed(0);
-  
-  // Set directory for output
-  //const std::string dir = "output/Growth_and_FS_2_small_time_step/";
-  const std::string dir = "output/FS_Without_Gravity/";
-  //prepare_directory_for_output(dir);
-
-  // Set parameters for the simulation
-  MyParam param
-    {
-     .N = 384,
-     .L = 384 * 0.8,
-     // ULDM params
-     .m = 1.0,
-     .lambda = 0,
-     .k_ast = 1.0,
-     .k_Psi = 1.0, //1.0 / 6.0,
-     .varphi_std_dev = 1.0,
-     .Psi_std_dev = 0.02,
-     // FRW metric params
-     .a1 = 1.0,
-     .H1 = 0.05,
-     .t1 = 1.0 / (2 * param.H1),
-     // Solution record params
-     .t_start = param.t1,
-     .t_end = param.t_start + (pow(60.0 / param.a1, 2) - 1.0) / (2 * param.H1),
-     .t_interval = 49.99, //(param.t_end - param.t_start) / 2.0,
-     // Numerical method parameter
-     .delta_t = 0.1,
-     // Psi approximation parameter
-     .M = 128
-    };
-  //print_param(param);
-  //save_param_for_Mathematica(param, dir);
-
-  // Decide which equation to solve
-  //typedef ComovingCurvatureEquationInFRW Equation;
-  typedef KleinGordonEquationInFRW Equation;
-  typedef typename Equation::Workspace Workspace;
-  typedef typename Equation::State State;
-  
-  // Initialize the workspace with the params (1st argument) and an initilizer procedure (2nd argument)
-  Workspace workspace(param, unperturbed_grf);
-  //Workspace workspace(param, wave_packet);
-  
-  Equation eqn(workspace);
-  
-  workspace.state = load_VectorXd_from_file(dir + "state.dat");
-
-  
-  WKBSolutionForKleinGordonEquationInFRW wkb(workspace, param.t_end);
-
-  Eigen::VectorXd times = param.t_end * Eigen::VectorXd::LinSpaced(180, 0.09, 16.2).array().exp();
-
-  
-  for(size_t i = 0; i < times.size(); ++i) {
-    const int N = param.N;
-    double t_eval = times[i];
-    workspace.state = wkb.evaluate_at(t_eval);
-    {
-      auto rho = Equation::compute_energy_density(workspace, t_eval);
-      auto rho_spectrum = compute_power_spectrum(param.N, rho, workspace.fft_wrapper);
-      write_VectorXd_to_filename_template(rho_spectrum, dir + "wkb_rho_spectrum_%d.dat", i);
-      
-      Eigen::VectorXd rho_slice = rho.head(N*N);
-      Eigen::VectorXd rho_axis_average = rho.reshaped(N*N, N).rowwise().mean();
-      write_VectorXd_to_filename_template(rho_slice, dir + "wkb_rho_slice_%d.dat", i);
-      write_VectorXd_to_filename_template(rho_axis_average, dir + "wkb_rho_axis_average_%d.dat", i);
-    }
-    {
-      auto varphi_plus_spectrum = compute_mode_power_spectrum(N, param.L, param.m, workspace.state, workspace.fft_wrapper);
-      write_VectorXd_to_filename_template(varphi_plus_spectrum, dir + "wkb_varphi_plus_spectrum_%d.dat", i);
-    }
-  }
-
-  write_VectorXd_to_file(times, dir + "wkb_t_list.dat");
-
-}
-
-
+void solve_field_equation(void);
+void generate_wkb_solutions(void);
 
 
 int main(int argc, char **argv){
+  // Runs the simulation described in Section 4.2.2 of paper.
+  
+  // Solve scalar field equation in a background of comoving curvature perturbation.
+  // Save output to output/Growth_and_FS/
+  solve_field_equation();
+
+  // Use WKB solution to extend the simulation.
+  generate_wkb_solutions();
+}  
+
+
+void solve_field_equation(void)
+{
   using namespace Eigen;
   using namespace boost::numeric::odeint;
 
@@ -166,16 +97,16 @@ int main(int argc, char **argv){
   // Set parameters for the simulation.
   MyParam param
     {
-     .N = 384,
-     .L = 384 * 0.8,
+     .N = 384, // Lattice points per axis
+     .L = 384 * 0.8, // Size of the box
      // ULDM params
-     .m = 1.0,
-     .lambda = 0,
-     //.f_a = 30.0,
-     .k_ast = 1.0,
+     .m = 1.0, // Mass of scalar field
+     .lambda = 0, // Lambda phi^4 coupling strength
+     //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
+     .k_ast = 1.0, // Characteristic momentum
      .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
-     .varphi_std_dev = 1.0,
-     .Psi_std_dev = 0.02,
+     .varphi_std_dev = 1.0, // Standard deviation of field
+     .Psi_std_dev = 0.02, // Standard deviation of metric perturbation Psi
      // FRW metric params
      .a1 = 1.0,
      .H1 = 0.05,
@@ -183,11 +114,11 @@ int main(int argc, char **argv){
      // Solution record params
      .t_start = param.t1,
      .t_end = param.t_start + (pow(60.0 / param.a1, 2) - 1.0) / (2 * param.H1),
-     .t_interval = 49.99,
+     .t_interval = 49.99, // Save a snapshot every t_interval
      // Numerical method parameter
-     .delta_t = 0.1,
+     .delta_t = 0.1, // Time step for numerical integration
      // Psi approximation parameter
-     .M = 128
+     .M = 128 // Lattice points for storing / computing Psi
     };
   print_param(param);
   save_param_for_Mathematica(param, dir);
@@ -262,13 +193,11 @@ int main(int argc, char **argv){
     copy_vector(state_out, workspace.state);
     write_VectorXd_to_file(state_out, dir + "state.dat");
   }
-}  
+}
 
 
-
-/*
-
-void soliton_formation(void){
+void generate_wkb_solutions(void)
+{
   using namespace Eigen;
   using namespace boost::numeric::odeint;
   
@@ -276,82 +205,74 @@ void soliton_formation(void){
   RandomNormal::set_generator_seed(0);
   
   // Set directory for output
-  const std::string dir = "output/Soliton_3/";
+  const std::string dir = "output/Growth_and_FS/";
   //prepare_directory_for_output(dir);
 
   // Set parameters for the simulation
   MyParam param
     {
      .N = 384,
-     .L = 384 * 2.0,
+     .L = 384 * 0.8,
      // ULDM params
      .m = 1.0,
      .lambda = 0,
-     .f_a = 30.0,
-     .k_ast = 0.1,
-     .k_Psi = 0.03,
+     .k_ast = 1.0,
+     .k_Psi = 1.0,
      .varphi_std_dev = 1.0,
-     .Psi_std_dev = 0.2,
+     .Psi_std_dev = 0.02,
      // FRW metric params
      .a1 = 1.0,
-     .H1 = 0.0,
-     .t1 = 0.0,
+     .H1 = 0.05,
+     .t1 = 1.0 / (2 * param.H1),
      // Solution record params
      .t_start = param.t1,
-     .t_end = 12500,
+     .t_end = param.t_start + (pow(60.0 / param.a1, 2) - 1.0) / (2 * param.H1),
      .t_interval = 49.99,
      // Numerical method parameter
-     .delta_t = 0.05,
+     .delta_t = 0.1,
      // Psi approximation parameter
-     .M = 128,
-     // fluctuation parameters
-     .f = param.f_a * 2,
-     .delta_varphi_std_dev = 0.01,
-     .k_delta_varphi = 0.125 * (param.N / 2) / param.L
+     .M = 128
     };
-  print_param(param);
+  //print_param(param);
   //save_param_for_Mathematica(param, dir);
 
-  // Decide which equation to solve
-  //typedef CudaKleinGordonEquationInFRW Equation;
-  //typedef CudaComovingCurvatureEquationInFRW Equation;
-  //typedef CudaApproximateComovingCurvatureEquationInFRW Equation;
-  typedef CudaSqrtPotentialEquationInFRW Equation;
+  // Setup a workspace
+  typedef KleinGordonEquationInFRW Equation;
   typedef typename Equation::Workspace Workspace;
-  typedef typename Equation::State State;
-  
-  //Workspace workspace(param, homogeneous_field_with_fluctuations);
-  Workspace workspace(param, perturbed_grf);
+  Workspace workspace(param, unperturbed_grf);
 
-  {
-    auto Psi_spectrum = compute_power_spectrum(param.N, workspace.Psi, workspace.fft_wrapper);
-    Eigen::VectorXd Psi_spectrum_eigen(Psi_spectrum.size());
-    copy_vector(Psi_spectrum_eigen, Psi_spectrum);
-    write_VectorXd_to_file(Psi_spectrum_eigen, dir + "initial_Psi_spectrum.dat");
+  // Load final state from directory
+  workspace.state = load_VectorXd_from_file(dir + "state.dat");
+
+  // Prepare WKB solution class
+  WKBSolutionForKleinGordonEquationInFRW wkb(workspace, param.t_end);
+
+  // Specify the time to evaluate the WKB solution
+  Eigen::VectorXd times = param.t_end * Eigen::VectorXd::LinSpaced(180, 0.09, 16.2).array().exp();
+
+  // Evaluate the WKB solutions and save them
+  for(long int i = 0; i < times.size(); ++i) {
+    const int N = param.N;
+    double t_eval = times[i];
+    workspace.state = wkb.evaluate_at(t_eval);
+    {
+      auto rho = Equation::compute_energy_density(workspace, t_eval);
+      auto rho_spectrum = compute_power_spectrum(param.N, rho, workspace.fft_wrapper);
+      write_VectorXd_to_filename_template(rho_spectrum, dir + "wkb_rho_spectrum_%d.dat", i);
+      
+      Eigen::VectorXd rho_slice = rho.head(N*N); // The density for a = 0 slice.
+      Eigen::VectorXd rho_axis_average = rho.reshaped(N*N, N).rowwise().mean(); // The density overaged over a axis.
+      write_VectorXd_to_filename_template(rho_slice, dir + "wkb_rho_slice_%d.dat", i);
+      write_VectorXd_to_filename_template(rho_axis_average, dir + "wkb_rho_axis_average_%d.dat", i);
+    }
+    {
+      auto varphi_plus_spectrum = compute_mode_power_spectrum(N, param.L, param.m, workspace.state, workspace.fft_wrapper);
+      write_VectorXd_to_filename_template(varphi_plus_spectrum, dir + "wkb_varphi_plus_spectrum_%d.dat", i);
+    }
   }
 
-  exit(0);
-  
-  Equation eqn(workspace);
-  ConstIntervalObserver<Equation, true, true, true> observer(dir, param, eqn);
+  write_VectorXd_to_file(times, dir + "wkb_t_list.dat");
 
-  // Solve the equation
-  auto stepper = runge_kutta4_classic<State, double, State, double>();
-  
-  run_and_measure_time("Solving equation",
-  		       [&](){
-			 int num_steps = integrate_const(stepper, eqn, workspace.state, param.t_start, param.t_end, param.delta_t, observer);
-			 std::cout << "total number of steps = " << num_steps << '\n';
-		       } );
-  
-  write_vector_to_file(workspace.t_list, dir + "t_list.dat");
-  
-  
-  // Optional: save the final state
-  {
-    Eigen::VectorXd state_out(workspace.state.size());
-    copy_vector(state_out, workspace.state);
-    write_VectorXd_to_file(state_out, dir + "state.dat");
-  }
-}  
-*/
+}
+
+

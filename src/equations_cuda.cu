@@ -1,5 +1,15 @@
 #include "equations_cuda.cuh"
 
+// #include <thrust/host_vector.h>
+// #include <thrust/execution_policy.h>
+// #include <thrust/reduce.h>
+// #include <thrust/functional.h>
+// #include <thrust/fill.h>
+// #include <thrust/transform.h>
+
+#include "cuda_wrapper.cuh"
+#include "fdm3d_cuda.cuh"
+
 typedef thrust::device_vector<double> state_type;
 
 __global__

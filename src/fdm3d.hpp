@@ -5,10 +5,7 @@
 #ifndef FDM3D_HPP
 #define FDM3D_HPP
 
-#include <iostream>
-#include <fstream>
-#include <fftw3.h>
-#include <numbers>
+#include "Eigen/Dense"
 #include "dispatcher.hpp"
 
 

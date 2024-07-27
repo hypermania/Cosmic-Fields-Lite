@@ -13,10 +13,6 @@
 #ifndef EQUATIONS_H
 #define EQUATIONS_H
 
-#include <cstdlib>
-#include <iostream>
-#include <string>
-#include <cmath>
 
 #include "Eigen/Dense"
 
@@ -25,17 +21,7 @@
 
 #include "odeint_eigen/eigen_operations.hpp"
 
-#include "fdm3d.hpp"
-#include "io.hpp"
-#include "physics.hpp"
 #include "workspace.hpp"
-
-
-// #ifndef DISABLE_CUDA
-// #include "cuda_wrapper.cuh"
-// #include "fdm3d_cuda.cuh"
-// #endif
-
 
 template<typename Equation>
 concept LatticeEquationConcept = requires (Equation eqn)

@@ -10,7 +10,6 @@
 
 #include <memory>
 
-#include "random_field.hpp"
 #include "param.hpp"
 #include "physics.hpp"
 #include "fftw_wrapper.hpp"
@@ -21,14 +20,15 @@
 
 
 template<typename Param>
-concept HasBasicParams = requires (Param param)
-  { {std::remove_cvref_t<decltype(param.N)>()} -> std::same_as<long long int>;
-    {std::remove_cvref_t<decltype(param.L)>()} -> std::same_as<double>;
-    {std::remove_cvref_t<decltype(param.m)>()} -> std::same_as<double>; };
+concept HasLatticeParams = requires (Param param)
+  { TYPE_REQUIREMENT(param.N, long long int)
+    TYPE_REQUIREMENT(param.L, double) };
+
+template<typename Param>
+concept HasMass = requires (Param param) { TYPE_REQUIREMENT(param.m, double) };
 
 template<typename Param>
 concept HasLambda = requires (Param param) { TYPE_REQUIREMENT(param.lambda, double) };
-//concept HasLambda = requires (Param param) { param.lambda; };
 
 template<typename Param>
 concept HasFa = requires (Param param) { TYPE_REQUIREMENT(param.f_a, double) };
@@ -38,7 +38,6 @@ concept HasFRWParameters = requires (Param param)
   { TYPE_REQUIREMENT(param.a1, double)
     TYPE_REQUIREMENT(param.H1, double)
     TYPE_REQUIREMENT(param.t1, double) };
-//concept HasFRWParameters = requires (Param param) { param.a1; param.H1; param.t1; };
 
 template<typename Param>
 concept HasPsiApproximationParameters = requires (Param param)
@@ -72,13 +71,13 @@ struct WorkspaceGeneric {
   std::unique_ptr<typename fftWrapperDispatcher<Vector>::Generic> fft_wrapper_M_ptr;
   Vector cutoff_R_fft;
   
-  template<HasBasicParams Param>
+  template<HasLatticeParams Param>
   WorkspaceGeneric(const Param &param, auto &initializer) :
-    N(param.N), L(param.L), m(param.m),
-    fft_wrapper(param.N)
+    N(param.N), L(param.L), fft_wrapper(param.N)
   {
-    //static_assert(HasBasicParams<Param>, "HasBasicParams<Param> test failed.");
+    //static_assert(HasLatticeParams<Param>, "HasLatticeParams<Param> test failed.");
     if constexpr(HasFRWParameters<Param>) { cosmology = StaticEOSCosmology(param); }
+    if constexpr(HasMass<Param>) { m = param.m; }
     if constexpr(HasLambda<Param>) { lambda = param.lambda; }
     if constexpr(HasFa<Param>) { f_a = param.f_a; }
     if constexpr(HasPsiApproximationParameters<Param>) { M = param.M;

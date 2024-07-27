@@ -7,8 +7,8 @@
   Uses Boost.PFR for saving struct member type names, 
   so that Mathematica can import the struct in binary.
 */
-#ifndef PARAM_H
-#define PARAM_H
+#ifndef PARAM_HPP
+#define PARAM_HPP
 
 #include "utility.hpp"
 #include "boost/pfr.hpp"

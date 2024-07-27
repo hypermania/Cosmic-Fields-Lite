@@ -1,5 +1,14 @@
 #include "field_booster.hpp"
 
+#include <array>
+#include <deque>
+#include <boost/math/interpolators/quintic_hermite.hpp>
+
+#include "workspace.hpp"
+#include "equations.hpp"
+#include "fdm3d.hpp"
+#include "utility.hpp"
+
 
 void add_phase_to_state(Eigen::VectorXd &state, const Eigen::VectorXd &phase)
 {

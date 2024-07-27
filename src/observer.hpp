@@ -4,8 +4,8 @@
   
 */
 
-#ifndef OBSERVER_H
-#define OBSERVER_H
+#ifndef OBSERVER_HPP
+#define OBSERVER_HPP
 
 #include <cstdlib>
 #include <iostream>

@@ -1,5 +1,7 @@
 #include "wkb.hpp"
 
+#include <cmath>
+
 WKBSolutionForKleinGordonEquationInFRW::WKBSolutionForKleinGordonEquationInFRW(Workspace &workspace_, const double t_i_) : workspace(workspace_), t_i(t_i_)
 {
   assert((workspace.cosmology.p == 1.0) && "Only radiation dominated cosmology is supported for now.");
@@ -26,7 +28,7 @@ WKBSolutionForKleinGordonEquationInFRW::Vector WKBSolutionForKleinGordonEquation
   const long long int N = workspace.N;
   const double L = workspace.L;
   const long long int fft_size = phi_ffts.size() / 2;
-  const long long int num_modes = fft_size / 2;
+  //const long long int num_modes = fft_size / 2;
   //const int field_size = workspace.N * workspace.N * workspace.N;
 
   const double a1 = workspace.cosmology.a1;
@@ -37,7 +39,7 @@ WKBSolutionForKleinGordonEquationInFRW::Vector WKBSolutionForKleinGordonEquation
   
   
   auto compute_phase_integral =
-    [=](const double k_sqr){
+    [=, this](const double k_sqr){
       return std::sqrt(H1 *
 		       (8 * k_sqr * t_f + std::pow(a1, 2) * H1 * (3 + 16 * std::pow(m, 2) * std::pow(t_f, 2)))) /
 	(4. * a1 * H1) -
@@ -92,10 +94,9 @@ WKBSolutionForKleinGordonEquationInFRW::Vector WKBSolutionForKleinGordonEquation
 	long long int s_sqr = a_shifted*a_shifted + b_shifted*b_shifted + c_shifted*c_shifted;
 	double k_sqr = s_sqr * std::pow(2 * pi / L, 2);
 	long long int idx = N*(N/2+1)*a + (N/2+1)*b + c_shifted;
-	//phase(idx) = compute_phase_integral(k_sqr);
 	double phase = compute_phase_integral(k_sqr);
 	double omega_eff_i = std::sqrt(m * m + k_sqr / (2 * a1 * a1 * H1 * t_i) + 3 / (16 * t_i * t_i));
-	double omega_eff_f = std::sqrt(m * m + k_sqr / (2 * a1 * a1 * H1 * t_f) + 3 / (16 * t_f * t_f));
+	//double omega_eff_f = std::sqrt(m * m + k_sqr / (2 * a1 * a1 * H1 * t_f) + 3 / (16 * t_f * t_f));
 	// Ignoring the sqrt(omega) factor in front for now
 	double cos_val = cos(phase);
 	double sin_val = sin(phase);

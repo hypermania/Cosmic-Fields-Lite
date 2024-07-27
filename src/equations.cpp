@@ -1,5 +1,10 @@
 #include "equations.hpp"
 
+#include "fdm3d.hpp"
+#include "physics.hpp"
+
+
+
 void KleinGordonEquation::operator()(const State &x, State &dxdt, const double t)
 {
   using namespace Eigen;

@@ -1,5 +1,9 @@
 #include "fdm3d.hpp"
 
+#include <fftw3.h>
+#include <numbers>
+
+
 Eigen::VectorXd compute_power_spectrum(const long long int N,
 				       Eigen::VectorXd &f,
 				       fftWrapperDispatcher<Eigen::VectorXd>::Generic &fft_wrapper)
@@ -179,134 +183,6 @@ Eigen::VectorXd compute_fourier(const long long int N, const double L, Eigen::Ve
   fftw_free(phi_k);
 
   return fourier;
-}
-
-
-
-Eigen::VectorXd compute_gradient_squared(const long long int N, const double L, const Eigen::VectorXd &phi)
-{
-  using namespace Eigen;
-  double h_sqr_factor = 0.25 / ((L / N) * (L / N));
-  Eigen::VectorXd result(N*N*N);
-
-  for(long long int a = 0; a < N; ++a){
-    for(long long int b = 0; b < N; ++b){
-      /*
-	Eigen::VectorXd line(N);
-	line.array() = 0;
-
-	line.array() += (phi(seqN(IDX_OF(N, (a+1)%N, b, 0), N))
-			 - phi(seqN(IDX_OF(N, (a+N-1)%N, b, 0), N))).array().square();
-	line.array() += (phi(seqN(IDX_OF(N, a, (b+1)%N, 0), N))
-			 - phi(seqN(IDX_OF(N, a, (b+N-1)%N, 0), N))).array().square();
-      
-	line(0) += pow(phi(IDX_OF(N, a, b, 1)) - phi(IDX_OF(N, a, b, N-1)), 2);
-	line(N-1) += pow(phi(IDX_OF(N, a, b, 0)) - phi(IDX_OF(N, a, b, N-2)), 2);
-	line(seqN(1, N-2)).array() += (phi(seqN(IDX_OF(N, a, b, 2), N-2))
-				       - phi(seqN(IDX_OF(N, a, b, 0), N-2))).array().square();
-
-	result(seqN(IDX_OF(N, a, b, 0), N)) = h_sqr_factor * line;
-      */
-      result(seqN(IDX_OF(N, a, b, 0), N)) = h_sqr_factor *
-	( (phi(seqN(IDX_OF(N, (a+1)%N, b, 0), N))
-	   - phi(seqN(IDX_OF(N, (a+N-1)%N, b, 0), N))).cwiseAbs2()
-	  + (phi(seqN(IDX_OF(N, a, (b+1)%N, 0), N))
-	     - phi(seqN(IDX_OF(N, a, (b+N-1)%N, 0), N))).cwiseAbs2() );
-      result(IDX_OF(N, a, b, 0)) += h_sqr_factor *
-	pow(phi(IDX_OF(N, a, b, 1)) - phi(IDX_OF(N, a, b, N-1)), 2);
-      result(IDX_OF(N, a, b, N-1)) += h_sqr_factor *
-	pow(phi(IDX_OF(N, a, b, 0)) - phi(IDX_OF(N, a, b, N-2)), 2);
-      result(seqN(IDX_OF(N, a, b, 1), N-2)) += h_sqr_factor *
-	(phi(seqN(IDX_OF(N, a, b, 2), N-2)) - phi(seqN(IDX_OF(N, a, b, 0), N-2))).cwiseAbs2();
-    }
-  }
-
-  return result;
-}
-
-Eigen::VectorXd compute_delta_flat(const long long int N, const double L, const double m, const Eigen::VectorXd &f, const Eigen::VectorXd &dfdt, double &rho_mean_out)
-{
-  using namespace Eigen;
-  VectorXd rho = 0.5 * ( dfdt.cwiseAbs2()
-			 + compute_gradient_squared(N, L, f)
-			 + m * m * f.cwiseAbs2() );
-  double rho_mean = rho.mean();
-  VectorXd delta = ((rho.array() - rho_mean) / rho_mean).matrix();
-  //VectorXd delta = rho;
-  //std::cout << "rho_mean = " << rho_mean << std::endl;
-  
-  rho_mean_out = rho_mean;
-
-  return delta;
-}
-
-Eigen::VectorXd compute_delta_flat(const long long int N, const double L, const double m, const Eigen::VectorXd &f, const Eigen::VectorXd &dfdt)
-{
-  double unused;
-  return compute_delta_flat(N, L, m, f, dfdt, unused);
-}
-
-Eigen::VectorXd compute_delta_radiation(const long long int N, const double L, const double m,
-					const double a_t,
-					const Eigen::VectorXd &f, const Eigen::VectorXd &dfdt,
-					double &rho_mean_out)
-{
-  using namespace Eigen;
-  VectorXd rho = 0.5 * ( dfdt.cwiseAbs2()
-			 + (1.0 / a_t / a_t) * compute_gradient_squared(N, L, f)
-			 + m * m * f.cwiseAbs2() );
-  double rho_mean = rho.mean();
-  VectorXd delta = ((rho.array() - rho_mean) / rho_mean).matrix();
-  
-  rho_mean_out = rho_mean;
-
-  return delta;
-}
-
-
-Eigen::VectorXd compute_delta_radiation_with_interaction(const long long int N, const double L, const double m, const double lambda,
-							 const double a_t,
-							 const Eigen::VectorXd &f, const Eigen::VectorXd &dfdt,
-							 double &rho_mean_out)
-{
-  using namespace Eigen;
-  VectorXd rho = 0.5 * ( dfdt.cwiseAbs2()
-			 + (1.0 / a_t / a_t) * compute_gradient_squared(N, L, f)
-			 + m * m * f.cwiseAbs2()
-			 + 0.5 * lambda * f.array().pow(4).matrix() );
-  double rho_mean = rho.mean();
-  VectorXd delta = ((rho.array() - rho_mean) / rho_mean).matrix();
-  
-  rho_mean_out = rho_mean;
-
-  return delta;
-}
-
-// Using Newtonian metric (-(1-2Psi), 1+2Psi, 1+2Psi, 1+2Psi)
-Eigen::VectorXd compute_delta_with_potential(const long long int N, const double L, const double m,
-					     const Eigen::VectorXd &Psi,
-					     const Eigen::VectorXd &f, const Eigen::VectorXd &dfdt,
-					     double &rho_mean_out)
-{
-  using namespace Eigen;
-  VectorXd rho = 0.5 * ( (2*Psi.array()).exp() * dfdt.array().square()
-			 + (-2*Psi.array()).exp() * compute_gradient_squared(N, L, f).array()
-			 + m*m*f.array().square() ).matrix();
-  double rho_mean = rho.mean();
-  VectorXd delta = ((rho.array() - rho_mean) / rho_mean).matrix();
-  
-  rho_mean_out = ((2*Psi.array()).exp() * rho.array()).mean();
-  
-  return delta;
-}
-
-// Using Newtonian metric (-(1-2Psi), 1+2Psi, 1+2Psi, 1+2Psi)
-Eigen::VectorXd compute_delta_with_potential(const long long int N, const double L, const double m,
-					     const Eigen::VectorXd &Psi,
-					     const Eigen::VectorXd &f, const Eigen::VectorXd &dfdt)
-{
-  double unused;
-  return compute_delta_with_potential(N, L, m, Psi, f, dfdt, unused);
 }
 
 

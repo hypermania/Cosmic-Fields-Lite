@@ -1,5 +1,5 @@
-#ifndef FDM3D_CUDA_H
-#define FDM3D_CUDA_H
+#ifndef FDM3D_CUDA_CUH
+#define FDM3D_CUDA_CUH
 
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
@@ -9,7 +9,7 @@
 #include "cuda_wrapper.cuh"
 #include "dispatcher.hpp"
 
-#define IDX_OF(N, i, j, k) ((N)*(N)*(i) + (N)*(j) + (k))
+#include "fdm3d.hpp"
 
 thrust::device_vector<double> compute_mode_power_spectrum(const long long int N, const double L, const double m,
 							  thrust::device_vector<double> &state,

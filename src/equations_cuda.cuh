@@ -2,26 +2,14 @@
   \file equations_cuda.cuh
   \brief Header for field equations that runs on the GPU.
 */
-#ifndef EQUATIONS_CUDA_H
-#define EQUATIONS_CUDA_H
+#ifndef EQUATIONS_CUDA_CUH
+#define EQUATIONS_CUDA_CUH
 
-#include <boost/numeric/odeint.hpp>
 #include "equations.hpp"
 
 #include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-#include <thrust/execution_policy.h>
-#include <thrust/reduce.h>
-#include <thrust/functional.h>
-#include <thrust/fill.h>
-#include <thrust/transform.h>
 
-#include "cuda_wrapper.cuh"
 #include "odeint_thrust/thrust.hpp"
-#include "fdm3d_cuda.cuh"
-
-#define IDX_OF(N, i, j, k) ((N)*(N)*(i) + (N)*(j) + (k))
-
 
 struct CudaKleinGordonEquationInFRW {
   typedef thrust::device_vector<double> Vector;

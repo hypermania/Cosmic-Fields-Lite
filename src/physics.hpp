@@ -3,12 +3,11 @@
   \brief Collection of repeatedly used physics formulas. (e.g. FRW cosmology related formulas)
  
 */
-#ifndef PHYSICS_H
-#define PHYSICS_H
+#ifndef PHYSICS_HPP
+#define PHYSICS_HPP
 
 #include <cmath>
-
-#include "param.hpp"
+//#include "param.hpp"
 
 struct StaticEOSCosmology {
   double a1;
