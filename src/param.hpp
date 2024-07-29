@@ -1,11 +1,15 @@
 /*!
   \file param.hpp
-  \brief Utilities for managing parameters specifying different kinds of simulations.
+  \author Siyang Ling
+  \brief Utilities for managing simulations parameters.
   
-  Data types and utilities for managing the parameters of a simulation.
-  The parameters are collected as a struct of double or long long int.
-  Uses Boost.PFR for saving struct member type names, 
-  so that Mathematica can import the struct in binary.
+  This header file contains utilities for pretty-printing and saving parameters of a simulation.
+  By convention, we collect all parameters in a (trivial, standard layout) struct containing double's or long long int's.
+  (e.g. SampleParam)
+  The utilities here are generic for different parameter structs; 
+  you can define your own new type containing new parameters, and use the utilities here as usual.
+  Typically, we use these utilities to export a struct along with some meta-information, 
+  so that external code (Mathematica / Python) can also use the parameters.
 */
 #ifndef PARAM_HPP
 #define PARAM_HPP
@@ -14,51 +18,26 @@
 #include "boost/pfr.hpp"
 #include "boost/type_index.hpp"
 #include <fstream>
-#include <iostream>
 #include <string>
 
-/*
-  Utilities for managing parameters specifying different kinds of simulations.
-  SampleParam is a parameter type specifying a lambda-phi-4 theory in an FRW background.
-  You may define your own parameter type, but preferably using conventions consistent with below:
-
-  Discretization parameters:
-  N: the number of lattice points on one side of the box (i.e. N=256 means 256^3 lattice sites)
-  L: the length of one side of the box (i.e. L=10.0 means the box has volume L^3)
-
-  ULDM field parameters:
-  m: mass of the ULDM field
-  lambda: quartic self-interaction of the ULDM field 
-  (i.e. V(varphi) = m^2 varphi^2 / 2 + lambda varphi^4 / 4)
-  f_a: the "nonlinear scale" of the ULDM field
-  (i.e. V(varphi) = m^2 f_a^2 (sqrt(1 + varphi^2 / f_a^2) - 1))
-  k_ast: the wavenumber for the peak of the field power spectrum
-  k_Psi: the wavenumber for a large scale perturbation in the field energy density
-  varphi_std_dev: the expected RMS value <varphi^2> for the field, averaged over the box
-  Psi_std_dev: the expected RMS value <Psi^2> for the perturbation, averaged over the box
-
-  Cosmological parameters:
-  a1: the scale factor at time t1  
-  H1: the Hubble parameter at time t1
-  t1: coordinate time parameter
-  (For radiation domination, a(t) = a1 * (1 + 2 H1 (t-t1))^0.5, H(t) = H1 * (1 + 2 H1 (t-t1))^(-1) .)
+/*!
+  \brief A sample parameter type specifying a lambda-phi-4 theory in an FRW background.
 */
-
 struct SampleParam {
-  long long int N;
-  double L;
-  double m;
-  double lambda;
-  double k_ast;
-  double k_Psi;
-  double varphi_std_dev;
-  double Psi_std_dev;
-  double a1;
-  double H1;
-  double t1;
+  long long int N; /*!< the number of lattice points on one side of the box (i.e. \f$ N=256 \f$ means \f$ 256^3 \f$ lattice sites) */
+  double L; /*!< the length of one side of the box (i.e. \f$ L=10.0 \f$ means the box has volume \f$ L^3 \f$ ) */
+  double m; /*!< mass \f$ m \f$ of the scalar field */
+  double lambda; /*!< quartic self-interaction of the scalar field (i.e. \f$ \lambda \f$ in \f$ V(\varphi) = \frac12 m^2 \varphi^2 + \frac14 \lambda \varphi^4 \f$ )   */
+  double k_ast; /*!< the wavenumber \f$ k_\ast \f$ for the peak of the field power spectrum */
+  double varphi_std_dev; /*!< the expected RMS value \f$ \langle \varphi^2 \rangle \f$ for the field, averaged over the box */
+  double a1; /*!< the scale factor at time \f$ t_1 \f$ */
+  double H1; /*!< the Hubble parameter at time \f$ t_1 \f$ */
+  double t1; /*!< coordinate time parameter \f$ t_1 \f$  (For radiation domination, \f$ a(t) = a_1 (1 + 2 H_1 (t-t_1))^{1/2} \f$, \f$ H(t) = H_1 (1 + 2 H_1 (t-t_1))^{-1} \f$ .) */
 };
 
-
+/*!
+  \brief Pretty prints a parameter struct T.
+*/
 template<typename T>
 void print_param(const T &param) {
   auto names = boost::pfr::names_as_array<T>();
@@ -73,7 +52,9 @@ void print_param(const T &param) {
   run_and_print("The parameters for the simulation", c);
 }
 
-
+/*!
+  \brief Save the member names of parameter struct T to filename.
+*/
 template<typename T>
 void save_param_names(const std::string &filename) {
   std::ofstream outstream(filename);
@@ -101,17 +82,6 @@ template<> constexpr std::string_view Mathematica_format<double> = "Real64";
 template<> constexpr std::string_view Mathematica_format<long long int> = "Integer64";
 */
 
-/*
-// Alternate solution
-constexpr static std::string get_Mathematica_format(double) {
-  return std::string("Real64");
-}
-
-constexpr static std::string get_Mathematica_format(long long int) {
-  return std::string("Integer64");
-}
-*/
-
 namespace {
 template<typename T> std::string_view Mathematica_format;
 
@@ -120,6 +90,9 @@ template<> constexpr std::string_view Mathematica_format<double> = "Real64";
 template<> constexpr std::string_view Mathematica_format<long long int> = "Integer64";
 }
 
+/*!
+  \brief Save the member types of parameter struct T to filename. Type names are in Mathematica convention.
+*/
 template<typename T>
 void save_param_Mathematica_formats(const std::string &filename) {
   std::ofstream outstream(filename);
@@ -130,7 +103,9 @@ void save_param_Mathematica_formats(const std::string &filename) {
   boost::pfr::for_each_field(T(), func);
 }
 
-
+/*!
+  \brief Save param directly to filename.
+*/
 template<typename T>
 static void save_param(const T &param, const std::string &filename){
   std::ofstream outstream(filename, std::ios::binary);
@@ -139,7 +114,9 @@ static void save_param(const T &param, const std::string &filename){
   }
 }
 
-
+/*!
+  \brief Save member names, types and values of param to directory dir.
+*/
 template<typename T>
 void save_param_for_Mathematica(const T &param, const std::string &dir) {
   save_param_names<T>(dir + "paramNames.txt");

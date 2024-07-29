@@ -1,6 +1,11 @@
 /*! 
   \file random_field.hpp
+  \author Siyang Ling
   \brief Utilities for generating Gaussian random fields of given spectrum and inhomogeneity.
+
+  This file contains utilities for generating Gaussian random fields (GRF), 
+  including some example spectra and a function for generating field realizations from a spectra.
+  See function generate_inhomogeneous_gaussian_random_field for details.
 */
 #ifndef RANDOM_FIELD_HPP
 #define RANDOM_FIELD_HPP
@@ -20,48 +25,93 @@ namespace RandomNormal
   double generate_random_normal();
 }
 
-// Typedef for spectrum P(k).
+/*! 
+  \brief Typedef for spectrum \f$ P(k) \f$. Given momentum \f$ k \f$, the spectrum should return \f$ P(k) \f$.
+*/
 typedef std::function<double(const double)> Spectrum;
 
-/*
-  Specify typical spectrums.
-*/
+// Typical spectra.
 
-/*
-  P(0) = 0.
-  P(k) = P_k0 * (k/k0)^alpha for k < k0.
-  <f^2> = sigma^2.
+/*!
+  \brief \f$ k^\alpha \f$ power law spectrum with a sharp cutoff at \f$ k_\ast \f$.
+  \param N Number of lattice points.
+  \param L Box size.
+  \param sigma Standard deviation \f$ \sigma \f$ of generated function \f$ f \f$.
+  \param k_ast Cutoff \f$ k_\ast \f$.
+  \param alpha Power law index \f$ \alpha \f$.
+  \return The spectrum \f$ P \f$, which can be called to get \f$ P(k) \f$.
+
+  The spectrum is given by
+  \f{eqnarray*}{
+  P(0) &=& 0 \\
+  P(k) &=& P(k_0) (k/k_0)^\alpha \textrm{ for } k < k_0 \\
+  \overline{f^2} &=& \sigma^2
+  \f}
 */
 Spectrum power_law_with_cutoff_given_amplitude_3d(const long long int N, const double L, const double sigma, const double k_ast, const double alpha);
 
-/*
-  P(0) = 0.
-  P(k) = P_k0 * (k/k0)^alpha for k < k0.
-  P(k) = P_k0 * (k/k0)^beta for k < k0.
-  <f^2> = sigma^2.
+/*!
+  \brief Broken power law spectrum with the break at \f$ k_\ast \f$.
+  \param N Number of lattice points.
+  \param L Box size.
+  \param sigma Standard deviation \f$ \sigma \f$ of generated function \f$ f \f$.
+  \param k_ast The break \f$ k_\ast \f$.
+  \param alpha Power law index \f$ \alpha \f$.
+  \param beta Power law index \f$ \beta \f$.
+  \return The spectrum \f$ P \f$, which can be called to get \f$ P(k) \f$.
+
+  The spectrum is given by
+  \f{eqnarray*}{
+  P(0) &=& 0 \\
+  P(k) &=& P(k_0) (k/k_0)^\alpha \textrm{ for } k < k_0 \\
+  P(k) &=& P(k_0) (k/k_0)^\beta \textrm{ for } k > k_0 \\
+  \overline{f^2} &=& \sigma^2
+  \f}
 */
 Spectrum broken_power_law_given_amplitude_3d(const long long int N, const double L, const double sigma, const double k_ast, const double alpha, const double beta);
 
-/*
-  P(0) = 0.
-  P(k) = As.
+/*!
+  \brief \f$ k^\alpha \f$ power law spectrum with a sharp cutoff at \f$ k_\ast \f$.
+  \param N Number of lattice points.
+  \param L Box size.
+  \param As The height of the spectrum \f$ A_s \f$.
+  \return The spectrum \f$ P \f$, which can be called to get \f$ P(k) \f$.
+
+  The spectrum is given by
+  \f{eqnarray*}{
+  P(0) &=& 0 \\
+  P(k) &=& A_s
+  \f}
 */
 Spectrum scale_invariant_spectrum_3d(const long long int N, const double L, const double As);
 
-// Given spectrum P_f, return P_dtf(k) = (k^2 + m^2) P_f(k).
+/*!
+  \brief Given spectrum \f$ P_\varphi \f$, return a new spectrum given by \f$ P_{\dot\varphi}(k) = (k^2 + m^2) P_\varphi(k) \f$.
+ */
 Spectrum to_deriv_spectrum(const double m, const Spectrum &P_f);
 
-// Given spectrum P_f, return P_dtf(k) = (k^2/a^2 + m^2) P_f(k).
+/*!
+  \brief Given spectrum \f$ P_\varphi \f$, return a new spectrum given by \f$ P_{\dot\varphi}(k) = (k^2/a^2 + m^2) P_\varphi(k) \f$.
+ */
 Spectrum to_deriv_spectrum(const double m, const double a, const Spectrum &P_f);
 
-// A stud spectrum for testing.
-Spectrum test_spectrum(const long long int N, const double L, const double sigma, const double k_ast, const double alpha);
-
-
-// Generate a homogeneous 3D real Gaussian random field phi from spectra data P(k).
+/*!
+  \brief Special case of generate_inhomogeneous_gaussian_random_field.
+*/
 Eigen::VectorXd generate_gaussian_random_field(const long long int N, const double L, const Spectrum &P);
 
-// Generate an inhomogeneous 3D real Gaussian random field phi from spectra data P(k).
+/*! 
+  \brief Generate an inhomogeneous 3D real Gaussian random field from spectral data P(k).
+  \param N Number of lattice points.
+  \param L Box size.
+  \param Psi The inhomogeneity function \f$ \psi \f$, given in terms of values on the lattice (of size \f$ N^3 \f$).
+  \param P The spectrum \f$ P \f$.
+  \return The generated GRF, as values on the lattice (of size \f$ N^3 \f$).
+
+  Generate an inhomogeneous Gaussian random field \f$ f \f$, such that the spectrum of \f$ f \f$ is \f$ P \f$, 
+  and the variance of the field has inhomogeneity like \f$ \langle f^2(x) \rangle \approx \overline{f^2} e^{2 \psi(x)} \f$.
+  See section 3.2 of paper for details of this procedure.
+*/
 Eigen::VectorXd generate_inhomogeneous_gaussian_random_field(const long long int N, const double L, const Eigen::VectorXd &Psi, const Spectrum &P);
 
 

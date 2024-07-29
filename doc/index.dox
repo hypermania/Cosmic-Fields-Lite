@@ -10,4 +10,6 @@
     \code 
     integrate_const(stepper, eqn, workspace.state, param.t_start, param.t_end, 0.5, observer);
     \endcode
+
+    - Test
 */

@@ -9,11 +9,16 @@
 #include "dispatcher.hpp"
 
 
-// Give the linear index of a point on grid
-// i,j,k give the x,y,z indices
+/*! 
+  \brief Give the linear index of a lattice point.
+*/
 #define IDX_OF(N, i, j, k) ((N)*(N)*(i) + (N)*(j) + (k))
 
-// Give the index of a point, assuming that the array is in FFTW padded format
+/*! 
+  \brief Give the index of a lattice point, assuming that the array is in FFTW padded format.
+
+  See <https://www.fftw.org/fftw3_doc/Multi_002dDimensional-DFTs-of-Real-Data.html>.
+*/
 #define PADDED_IDX_OF(N, i, j, k) ((N)*2*((N)/2+1)*(i) + 2*((N)/2+1)*(j) + (k))
 
 
@@ -39,10 +44,9 @@ Eigen::VectorXd compute_cutoff_fouriers(const long long int N, const long long i
 
 
 // Deprecated
-Eigen::VectorXd compute_power_spectrum(const long long int N, Eigen::VectorXd &phi);
-// Eigen::VectorXd compute_gradient_squared(const long long int N, const double L, const Eigen::VectorXd &phi);
-Eigen::VectorXd compute_fourier(const long long int N, const double L, Eigen::VectorXd &phi);
-Eigen::VectorXd compute_laplacian(const long long int N, const double L, const Eigen::VectorXd &f);
+// Eigen::VectorXd compute_power_spectrum(const long long int N, Eigen::VectorXd &phi);
+// Eigen::VectorXd compute_fourier(const long long int N, const double L, Eigen::VectorXd &phi);
+// Eigen::VectorXd compute_laplacian(const long long int N, const double L, const Eigen::VectorXd &f);
 
 
 
