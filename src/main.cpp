@@ -74,8 +74,8 @@ int main(int argc, char **argv){
   // Save output to output/Growth_and_FS/
   solve_field_equation();
 
-  // Use WKB solution to extend the simulation.
-  generate_wkb_solutions();
+  // Optional: Use WKB solution to extend the simulation.
+  //generate_wkb_solutions();
 }  
 
 
@@ -111,12 +111,12 @@ void solve_field_equation(void)
      .a1 = 1.0,
      .H1 = 0.05,
      .t1 = 1.0 / (2 * param.H1),
-     // Solution record params
+     // Start and end time for numerical integration, and time interval between saves
      .t_start = param.t1,
-     .t_end = param.t_start + (pow(60.0 / param.a1, 2) - 1.0) / (2 * param.H1),
+     .t_end = param.t_start + (pow(3.5 / param.a1, 2) - 1.0) / (2 * param.H1),
      .t_interval = 49.99, // Save a snapshot every t_interval
      // Numerical method parameter
-     .delta_t = 0.1, // Time step for numerical integration
+     .delta_t = 0.5, // Time step for numerical integration
      // Psi approximation parameter
      .M = 128 // Lattice points for storing / computing Psi
     };

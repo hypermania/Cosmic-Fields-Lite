@@ -92,7 +92,7 @@ Eigen::VectorXd generate_gaussian_random_field(const long long int N, const doub
 Spectrum power_law_with_cutoff_given_amplitude_3d(const long long int N, const double L, const double sigma, const double k_ast, const double alpha) {
   using namespace std::numbers;
   assert((alpha >= -3.0) && "Error: IR divergent choice of alpha.");
-  assert((k_ast * L / (2 * pi) < 1.0) && "Error: k_ast is less than k_IR (the smallest wavenumber given box size).");
+  assert((k_ast * L / (2 * pi) > 1.0) && "Error: k_ast is less than k_IR (the smallest wavenumber given box size).");
   double P_k_ast = alpha == -3.0
     ? 2 * pi * pi * sigma * sigma / (k_ast * k_ast * k_ast * log(k_ast * L / (2 * pi)))
     : (3 + alpha) * 2 * pi * pi * sigma * sigma * (L * L * L * pow(k_ast * L, alpha)) / (pow(k_ast * L, alpha + 3) - pow(2 * pi, alpha + 3));
@@ -103,7 +103,7 @@ Spectrum power_law_with_cutoff_given_amplitude_3d(const long long int N, const d
 Spectrum broken_power_law_given_amplitude_3d(const long long int N, const double L, const double sigma, const double k_ast, const double alpha, const double beta) {
   using namespace std::numbers;
   assert((alpha >= -3.0) && "Error: IR divergent choice of alpha.");
-  assert((k_ast * L / (2 * pi) < 1.0) && "Error: k_ast is less than k_IR (the smallest wavenumber given box size).");
+  assert((k_ast * L / (2 * pi) > 1.0) && "Error: k_ast is less than k_IR (the smallest wavenumber given box size).");
   double P_k_ast = alpha == -3.0
     ? (-2 * pi * pi) * (3 + beta) * sigma * sigma / (pow(k_ast, 3) * (1 - (3 + beta) * log(k_ast * L / (2 * pi))))
     : (-2 * pi * pi) * pow(L, 3) * pow(k_ast * L, alpha) * (3 + alpha) * (3 + beta) * sigma * sigma / (pow(k_ast * L, alpha + 3) * (alpha - beta) + pow(2 * pi, alpha + 3) * (3 + beta));

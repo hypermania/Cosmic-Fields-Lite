@@ -62,33 +62,34 @@ Here's a break down of the code:
 
 
 
-## How to build the project
-Compiler requirement: a C++ compiler supporting C++20. (I used g++ 12.2.0.)
+## How to get and build the project
+Compiler requirement: a C++ compiler supporting C++20. (I used [g++ 12.2.0](https://gcc.gnu.org/).)
 
 Required dependency: [fftw3](https://www.fftw.org/fftw3_doc/index.html)
 
 Optional dependency: [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit)
 
-We also included these header-only libraries [Eigen 3.4.0](https://eigen.tuxfamily.org) and [boost 1.84](https://www.boost.org/) along with the codebase in the `external` directory.
+I also included header-only libraries [Eigen 3.4.0](https://eigen.tuxfamily.org) and [boost 1.84](https://www.boost.org/) along with the codebase in the `external` directory.
 
-`Makefile` is used for build system. We have tested compilation on Linux and MacOS systems. To compile the project:
+`Makefile` is used for build system. I have tested compilation on Linux and MacOS systems. To compile the project:
 
+* Download the project with `git clone https://github.com/hypermania/lite-cosmic-sim`.
 * (If default settings don't work:) Modify the `Makefile` so that it knows where your fftw or CUDA include files / library files are.
-* If you have CUDA Toolkit installed, simply run `make`.
-* If you don't have CUDA Toolkit, run `make disable-cuda=true`. (We use compiler flags to comment out CUDA-dependent code.  e.g. CudaComovingCurvatureEquationInFRW)
+* If you have CUDA Toolkit installed, simply run `make -j`.
+* If you don't have CUDA Toolkit, run `make -j disable-cuda=true`. (I use compiler flags to comment out CUDA-dependent code.  e.g. CudaComovingCurvatureEquationInFRW)
 
 **Note: If you have a CUDA compatible NVIDIA GPU, using CUDA is highly recommended. In our case, it produced more than 10 times speedup.**
 
 ## Documentation
 If you have doxygen, you can build the documentation by running `doxygen doxygen.config`.
 
-## Utilities for interpreting output
-We include two Mathematica notebooks `numeric_plot.nb`, `animation.nb` and a python utility `plot_util.py` for plotting results.
+## Convenience utilities for visualizing output
+Two Mathematica notebooks `spectra.nb`, `snapshots.nb` and a python script `plot_util.py` are included for visualizing outputs from the program. By default, running the entire notebook / python script will read sample data from `output/Growth_and_FS` and produce spectra and snapshots. If you generate new outputs from the program, you just need to change `dir` or `project_dir` variables to the new output directory.
 
 ## Overview of implemented functionalities
 | Symbol                                                                                                                                                   |                                                                                                                                                                               Description                                                 |
 |----------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|  `generate_inhomogeneous_gaussian_random_field`                                                                                                          |Functionality for initializing Gaussian random fields with spatially inhomogeneous variances. This procedure is crucial for generating the initial conditions used in the paper.                                                           |
+|  `generate_inhomogeneous_gaussian_random_field`                                                                                                          |Function for initializing Gaussian random fields with spatially inhomogeneous variances. This procedure is crucial for generating the initial conditions used in the paper.                                                           |
 |`KleinGordonEquationInFRW` and `CudaKleinGordonEquationInFRW`                                                                                             |Klein Gordon equation that runs on CPU and GPU. Used in section 4.2.1 of paper.                                                                                                                                                            |
 |`ComovingCurvatureEquationInFRW`, `CudaComovingCurvatureEquationInFRW` and `CudaApproximateComovingCurvatureEquationInFRW`                                |A scalar field in the presence of external gravity that is consistent with some set of comoving curvature perturbations. Used in section 4.2.2 of paper.                                                                                   |
 |`CudaSqrtPotentialEquationInFRW`                                                                                                                          |A scalar field with monodromy potential. Used in section 4.2.3 of paper.                                                                                                                                                                   |

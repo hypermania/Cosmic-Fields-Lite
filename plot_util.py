@@ -80,9 +80,7 @@ class PlottingUtils:
 
 
 # Load data
-#project_dir = "output/FS_Without_Gravity/"
-#project_dir = "output/Growth_and_FS_2_small_time_step/"
-project_dir = "output/Soliton_1/"
+project_dir = "output/Growth_and_FS/"
 param = load_params(project_dir)
 
 rho_spectrum_list = load_list_of_arrays(project_dir, "rho_spectrum_([0-9]+).dat")
@@ -93,40 +91,11 @@ rho_average_list = load_list_of_arrays(project_dir, "rho_axis_average_([0-9]+).d
 delta_average_grid_list = [np.reshape(rho / rho.mean() - 1.0, [param['N'],param['N']]) for rho in rho_average_list]
 
 t_list = np.fromfile(project_dir + "t_list.dat", dtype=np.float64)
-#t_list = np.linspace(0, 12500, 12500 // 50 + 1)
-
-
-wkb_rho_spectrum_list = load_list_of_arrays(project_dir, "wkb_rho_spectrum_([0-9]+).dat")
-wkb_varphi_plus_spectrum_list = load_list_of_arrays(project_dir, "wkb_varphi_plus_spectrum_([0-9]+).dat")
-wkb_delta_spectrum_list = [spectrum / (spectrum[0] / pow(param['N'], 6)) for spectrum in wkb_rho_spectrum_list]
-
-wkb_rho_average_list = load_list_of_arrays(project_dir, "wkb_rho_axis_average_([0-9]+).dat")
-wkb_delta_average_grid_list = [np.reshape(rho / rho.mean() - 1.0, [param['N'],param['N']]) for rho in wkb_rho_average_list]
-
-wkb_t_list = np.fromfile(project_dir + "wkb_t_list.dat", dtype=np.float64)
-
-
-# Combine simulated data and WKB data
-combined_delta_spectrum_list = np.concatenate((delta_spectrum_list, wkb_delta_spectrum_list))
-combined_varphi_plus_spectrum_list = np.concatenate((varphi_plus_spectrum_list, wkb_varphi_plus_spectrum_list))
-combined_delta_average_grid_list = np.concatenate((delta_average_grid_list, wkb_delta_average_grid_list))
-combined_t_list = np.concatenate((t_list, wkb_t_list))
 
 
 utils = PlottingUtils(param)
-#utils.multiplicity_list.tofile("temp_multiplicity_list.dat")
 
 delta_power_spectrum_list = utils.compute_power_spectrum_list(delta_spectrum_list)
-#combined_delta_power_spectrum_list = utils.compute_power_spectrum_list(combined_delta_spectrum_list)
-
-
-del rho_average_list
-del rho_spectrum_list
-del varphi_plus_spectrum_list
-del delta_spectrum_list
-del wkb_rho_spectrum_list
-del wkb_varphi_plus_spectrum_list
-del wkb_delta_spectrum_list
 
 
 # Font Settings
@@ -156,7 +125,7 @@ colorNorm = matplotlib.colors.TwoSlopeNorm(0, vmin=-0.5, vmax=1.0)
 
 
 
-
+# Function to plot one spectrum
 def plot_spectrum(ax, power_spectrum, initial_power_spectrum=None, time=None):
     ax.set_xlim(*x_bounds)
     ax.set_ylim(*y_bounds)
@@ -176,6 +145,7 @@ def plot_spectrum(ax, power_spectrum, initial_power_spectrum=None, time=None):
     ax.text(*mt_text_pos,r'$mt={:.0f}$'.format(param['m'] * time),fontsize=10,color='0')
 
 
+    # Function to plot one snapshot
 def plot_slice(ax, grid, time=None):
     cax = ax.imshow(grid, cmap=cmbColor, norm=colorNorm, aspect='equal')
     ax.tick_params(axis="both",which="both",bottom=True,top=False,left=False,right=False,labelbottom=True,labeltop=False,labelleft=False,labelright=False,direction='in',length=5.0,width=0.5,reset=True)
@@ -192,8 +162,6 @@ def plot_slice(ax, grid, time=None):
     #cbar.set_label(r'$\delta$')
     
 
-
-
 # Plotting
 x_bounds = [1.0e-2, 4]
 y_bounds = [1e-4, 1e1]
@@ -205,104 +173,10 @@ slice_ticks = np.array([0, 100, 200, 300])
 slice_labels = list(map(lambda x: '$' + str(x) + '$', slice_ticks))
 
 
-"""
-# Without gravity
+
+# With gravity
 fig = plt.figure(figsize=(6.4,7.2))
 gs = fig.add_gridspec(3, 2, width_ratios=[2, 1.05], wspace=0, hspace=0)
-
-initial_power_spectrum = combined_delta_power_spectrum_list[0]
-
-# 1st row
-ax = fig.add_subplot(gs[0, 0])
-plot_spectrum(ax, combined_delta_power_spectrum_list[0], time=combined_t_list[0])
-
-ax = fig.add_subplot(gs[0, 1])
-plot_slice(ax, combined_delta_average_grid_list[0])
-
-
-# 2nd row
-ax = fig.add_subplot(gs[1, 0])
-plot_spectrum(ax, np.array(combined_delta_power_spectrum_list[720])[:,:68], initial_power_spectrum=initial_power_spectrum, time=combined_t_list[720])
-
-ax = fig.add_subplot(gs[1, 1])
-plot_slice(ax, combined_delta_average_grid_list[720])
-
-
-# 3rd row
-ax = fig.add_subplot(gs[2, 0])
-plot_spectrum(ax, np.array(combined_delta_power_spectrum_list[-1])[:,:68], initial_power_spectrum=initial_power_spectrum, time=combined_t_list[-1])
-
-ax = fig.add_subplot(gs[2, 1])
-plot_slice(ax, combined_delta_average_grid_list[-1])
-
-plt.savefig('../../Plots/delta_spectrum_without_gravity.pdf', bbox_inches='tight', dpi=500)
-#plt.savefig('../../Plots/fig_python_test.pdf', bbox_inches='tight', dpi=500)
-#plt.show()
-"""
-
-
-"""
-# With gravity
-#fig = plt.figure(figsize=(6,9))
-#fig = plt.figure(figsize=(6.4,9.6))
-fig = plt.figure(figsize=(6.4,9.6))
-gs = fig.add_gridspec(4, 2, width_ratios=[2, 1.05], wspace=0, hspace=0)
-
-initial_power_spectrum = combined_delta_power_spectrum_list[0]
-
-# 1st row
-ax = fig.add_subplot(gs[0, 0])
-plot_spectrum(ax, combined_delta_power_spectrum_list[0], time=combined_t_list[0])
-
-ax = fig.add_subplot(gs[0, 1])
-plot_slice(ax, combined_delta_average_grid_list[0])
-
-
-# 2nd row
-ax = fig.add_subplot(gs[1, 0])
-plot_spectrum(ax, np.array(combined_delta_power_spectrum_list[14])[:,:68], initial_power_spectrum=initial_power_spectrum, time=combined_t_list[14])
-
-ax = fig.add_subplot(gs[1, 1])
-plot_slice(ax, combined_delta_average_grid_list[14])
-
-
-# 3rd row
-ax = fig.add_subplot(gs[2, 0])
-#plot_spectrum(ax, combined_delta_power_spectrum_list[720], initial_power_spectrum=initial_power_spectrum, time=combined_t_list[720])
-plot_spectrum(ax, np.array(combined_delta_power_spectrum_list[720])[:,:68], initial_power_spectrum=initial_power_spectrum, time=combined_t_list[720])
-
-ax = fig.add_subplot(gs[2, 1])
-plot_slice(ax, combined_delta_average_grid_list[720])
-
-# 4th row
-ax = fig.add_subplot(gs[3, 0])
-plot_spectrum(ax, np.array(combined_delta_power_spectrum_list[-1])[:,:68], initial_power_spectrum=initial_power_spectrum, time=combined_t_list[-1])
-
-ax = fig.add_subplot(gs[3, 1])
-plot_slice(ax, combined_delta_average_grid_list[-1])
-
-plt.savefig('../../Plots/delta_spectrum_growth_and_fs_2.pdf', bbox_inches='tight', dpi=500)
-
-"""
-
-
-
-
-#Soliton
-x_bounds = [5e-3, 2]
-y_bounds = [1e-4, 1e3]
-log_aspect_ratio = log(y_bounds[1]/y_bounds[0]) / log(x_bounds[1]/x_bounds[0])
-
-mt_text_pos = [7e-3, 1e2]
-
-
-slice_ticks = np.array([0, 250, 500, 750])
-slice_labels = list(map(lambda x: '$' + str(x) + '$', slice_ticks))
-#slice_ticks = np.array([0, 25, 50, 75])
-
-
-fig = plt.figure(figsize=(6.4,9.6))
-gs = fig.add_gridspec(4, 2, width_ratios=[2, 1.05], wspace=0, hspace=0)
 
 initial_power_spectrum = delta_power_spectrum_list[0]
 
@@ -315,39 +189,20 @@ plot_slice(ax, delta_average_grid_list[0])
 
 
 # 2nd row
-idx = 20
 ax = fig.add_subplot(gs[1, 0])
-plot_spectrum(ax, np.array(delta_power_spectrum_list[idx]), initial_power_spectrum=initial_power_spectrum, time=t_list[idx])
-#ax.plot([1 / (param['k_ast'] / param['m'] * t_list[idx])] * 2, [1e-4,1e4], color='k')
+plot_spectrum(ax, np.array(delta_power_spectrum_list[1]), initial_power_spectrum=initial_power_spectrum, time=t_list[1])
 
 ax = fig.add_subplot(gs[1, 1])
-plot_slice(ax, delta_average_grid_list[idx])
+plot_slice(ax, delta_average_grid_list[1])
 
 
 # 3rd row
-idx = 60
 ax = fig.add_subplot(gs[2, 0])
-plot_spectrum(ax, np.array(delta_power_spectrum_list[idx]), initial_power_spectrum=initial_power_spectrum, time=t_list[idx])
-#ax.plot([1 / (param['k_ast'] / param['m'] * t_list[idx])] * 2, [1e-4,1e4], color='k')
+plot_spectrum(ax, np.array(delta_power_spectrum_list[2]), initial_power_spectrum=initial_power_spectrum, time=t_list[2])
 
 ax = fig.add_subplot(gs[2, 1])
-plot_slice(ax, delta_average_grid_list[idx])
+plot_slice(ax, delta_average_grid_list[2])
 
 
-# 4th row
-idx = -1
-ax = fig.add_subplot(gs[3, 0])
-plot_spectrum(ax, np.array(delta_power_spectrum_list[idx]), initial_power_spectrum=initial_power_spectrum, time=t_list[idx])
-#ax.plot([1 / (param['k_ast'] / param['m'] * t_list[idx])] * 2, [1e-4,1e4], color='k')
-
-ax = fig.add_subplot(gs[3, 1])
-plot_slice(ax, delta_average_grid_list[idx])
-
-
-# Save
-plt.savefig('../../Plots/delta_spectrum_soliton.pdf', bbox_inches='tight', dpi=500)
-#plt.savefig('../../Plots/fig_python_test.pdf', bbox_inches='tight', dpi=500)
-#plt.show()
-plt.close()
-
-
+#plt.savefig('delta_spectrum_growth_and_fs.pdf', bbox_inches='tight', dpi=500)
+plt.show()
