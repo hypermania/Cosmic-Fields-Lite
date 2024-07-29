@@ -1,6 +1,6 @@
 # lite-cosmic-sim
 
-**lite-cosmic-sim** is a lightweight and modular framework for performing field simulations in cosmology. This framework was used for studying free-streaming of wave dark matter; see [arXiv:XXXX.XXXX](https://arxiv.org) for the study. The codebase contains several field equations on both CPU and GPU (CUDA), offering choices for numerical methods and simulation outputs.
+**lite-cosmic-sim** is a lightweight and modular framework for performing field simulations in cosmology. This framework was used for studying free-streaming of wave dark matter; see [arXiv:XXXX.XXXX](https://arxiv.org) for the study and these [youtube videos](https://www.youtube.com/playlist?list=PLecJrnvnk5c7Iaqi-Wq7xvqk1Msgxn5pk) for visualization. The codebase contains several field equations on both CPU and GPU (CUDA), offering choices for numerical methods and simulation outputs.
 
 ## Overview
 This codebase aims to be:
@@ -99,4 +99,6 @@ Two Mathematica notebooks `spectra.nb`, `snapshots.nb` and a python script `plot
 
 
 ## Notes on using CUDA
-We use the `thrust` library (included in the CUDA Toolkit) for allocating/deallocating GPU memory. We also separate compilation of `.cpp` files and `.cu` files, so that users without CUDA can also use the code.
+We do separate compilation of `.cpp` files and `.cu` files; `.cu` files are automatically compiled by `nvcc`, whereas `.cpp` files are compiled by the host compiler. We use the `thrust` library (included with CUDA Toolkit) extensively, with field state vectors having type `thrust::device_vector<double>`. Initialization procedures usually prepare some profile on the CPU and then copy it to `device_vector<double> state` in the workspace.
+
+A straightforward way to use CUDA for a simulation is to implement an `Equation` class with `thrust::device_vector<double>` as state vector. You will probably need to write your own CUDA kernels for that purpose. See `equations_cuda.cu` for some examples.  Don't worry about adapting CUDA with the numerical integrators (e.g. RK4); the files in `src/odeint_thrust` will take care of that automatically.
