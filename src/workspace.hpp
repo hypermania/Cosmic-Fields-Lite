@@ -1,12 +1,10 @@
 /*!
   \file workspace.hpp
+  \author Siyang Ling
   \brief A generic "workspace" class, containing parameters / data / tools used during simulations.
-  
-  WorkspaceGeneric contains everything used during simulations, including the field state, gravitational potential, parameters, etc.
-  It is initialized by a Param struct (containing just a few numbers) and an "initializer" (see initializer.hpp).
 */
-#ifndef WORKSPACE_H
-#define WORKSPACE_H
+#ifndef WORKSPACE_HPP
+#define WORKSPACE_HPP
 
 #include <memory>
 
@@ -44,9 +42,13 @@ concept HasPsiApproximationParameters = requires (Param param)
   { TYPE_REQUIREMENT(param.M, long long int) };
 
 
-/* 
-   The workspace for solving equations.
-   The lifetime of objects in the workspace are managed by us (this codebase), instead of external libraries (e.g. odeint).
+/*!
+  \brief A generic workspace for storing temporary 
+
+  WorkspaceGeneric contains everything used during simulations, including the field state, gravitational potential, parameters, etc.
+  It is initialized by a Param struct (containing just a few numbers) and an "initializer" (see initializer.hpp).
+
+  The lifetime of objects in the workspace are managed by us (this codebase), instead of external libraries (e.g. odeint).
 */
 template<typename Vector>
 struct WorkspaceGeneric {

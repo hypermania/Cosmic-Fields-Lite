@@ -1,5 +1,10 @@
-#ifndef UTILITY_H
-#define UTILITY_H
+/*!
+  \file utility.hpp
+  \author Siyang Ling
+  \brief Utilities for debugging / profiling / pretty printing.
+*/
+#ifndef UTILITY_HPP
+#define UTILITY_HPP
 
 #include <iostream>
 #include <iomanip>

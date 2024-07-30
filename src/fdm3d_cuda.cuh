@@ -1,3 +1,8 @@
+/*! 
+  \file fdm3d_cuda.cuh
+  \author Siyang Ling
+  \brief CUDA implementation for fdm3d.hpp. Common procedures for manipulating / summarizing field configuration on a 3D lattice.
+*/
 #ifndef FDM3D_CUDA_CUH
 #define FDM3D_CUDA_CUH
 

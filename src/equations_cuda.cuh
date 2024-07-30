@@ -1,6 +1,13 @@
 /*! 
   \file equations_cuda.cuh
+  \author Siyang Ling
   \brief Header for field equations that runs on the GPU.
+
+  This is the header for field equations that are supposed to run on GPU (via CUDA).
+  Equations declared here will be used by the odeint library via `operator()`.
+  See <https://www.boost.org/doc/libs/1_85_0/libs/numeric/odeint/doc/html/boost_numeric_odeint/getting_started/short_example.html> for an example of odeint equation.
+  Typically, `compute_energy_density` is also implemented for saving energy density spectrum.
+  Also see equations.hpp.
 */
 #ifndef EQUATIONS_CUDA_CUH
 #define EQUATIONS_CUDA_CUH
@@ -106,9 +113,10 @@ void compute_deriv_test(const Eigen::VectorXd &in, Eigen::VectorXd &out,
 			const double a_t, const double H_t, const double inv_ah_sqr,
 			const long long int N);
 */
+/*
 void kernel_test(const thrust::device_vector<double> &R_fft, thrust::device_vector<double> &Psi, thrust::device_vector<double> &dPsidt,
 		 const long long int N, const double L, const double m,
 		 const double a_t, const double H_t, const double eta_t, const double inv_ah_sqr,
 		 const double t, fftWrapperDispatcher<thrust::device_vector<double>>::Generic &fft_wrapper);
-
+*/
 #endif

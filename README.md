@@ -1,4 +1,4 @@
-# lite-cosmic-sim
+# lite-cosmic-sim {#mainpage}
 
 **lite-cosmic-sim** is a lightweight and modular framework for performing field simulations in cosmology. This framework was used for studying free-streaming of wave dark matter; see [arXiv:XXXX.XXXX](https://arxiv.org) for the study and these [youtube videos](https://www.youtube.com/playlist?list=PLecJrnvnk5c7Iaqi-Wq7xvqk1Msgxn5pk) for visualization. The codebase contains several field equations on both CPU and GPU (CUDA), offering choices for numerical methods and simulation outputs.
 
@@ -73,7 +73,7 @@ I also included header-only libraries [Eigen 3.4.0](https://eigen.tuxfamily.org)
 
 `Makefile` is used for build system. I have tested compilation on Linux and MacOS systems. To compile the project:
 
-* Download the project with `git clone https://github.com/hypermania/lite-cosmic-sim`.
+* Download the project with (for example) `git clone https://github.com/hypermania/lite-cosmic-sim`.
 * (If default settings don't work:) Modify the `Makefile` so that it knows where your fftw or CUDA include files / library files are.
 * If you have CUDA Toolkit installed, simply run `make -j`.
 * If you don't have CUDA Toolkit, run `make -j disable-cuda=true`. (I use compiler flags to comment out CUDA-dependent code.  e.g. CudaComovingCurvatureEquationInFRW)
@@ -81,7 +81,7 @@ I also included header-only libraries [Eigen 3.4.0](https://eigen.tuxfamily.org)
 **Note: If you have a CUDA compatible NVIDIA GPU, using CUDA is highly recommended. In our case, it produced more than 10 times speedup.**
 
 ## Documentation
-If you have doxygen, you can build the documentation by running `doxygen doxygen.config`.
+	LaTeX version of documentation is in `documentation.pdf`. If you have doxygen, you can also build an html version by running `doxygen doxygen.config`.
 
 ## Convenience utilities for visualizing output
 Two Mathematica notebooks `spectra.nb`, `snapshots.nb` and a python script `plot_util.py` are included for visualizing outputs from the program. By default, running the entire notebook / python script will read sample data from `output/Growth_and_FS` and produce spectra and snapshots. If you generate new outputs from the program, you just need to change `dir` or `project_dir` variables to the new output directory.
@@ -89,7 +89,7 @@ Two Mathematica notebooks `spectra.nb`, `snapshots.nb` and a python script `plot
 ## Overview of implemented functionalities
 | Symbol                                                                                                                                                   |                                                                                                                                                                               Description                                                 |
 |----------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|  `generate_inhomogeneous_gaussian_random_field`                                                                                                          |Function for initializing Gaussian random fields with spatially inhomogeneous variances. This procedure is crucial for generating the initial conditions used in the paper.                                                           |
+| `generate_inhomogeneous_gaussian_random_field`                                                                                                          |Function for initializing Gaussian random fields with spatially inhomogeneous variances. This procedure is crucial for generating the initial conditions used in the paper.                                                           |
 |`KleinGordonEquationInFRW` and `CudaKleinGordonEquationInFRW`                                                                                             |Klein Gordon equation that runs on CPU and GPU. Used in section 4.2.1 of paper.                                                                                                                                                            |
 |`ComovingCurvatureEquationInFRW`, `CudaComovingCurvatureEquationInFRW` and `CudaApproximateComovingCurvatureEquationInFRW`                                |A scalar field in the presence of external gravity that is consistent with some set of comoving curvature perturbations. Used in section 4.2.2 of paper.                                                                                   |
 |`CudaSqrtPotentialEquationInFRW`                                                                                                                          |A scalar field with monodromy potential. Used in section 4.2.3 of paper.                                                                                                                                                                   |

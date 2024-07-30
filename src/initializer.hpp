@@ -1,7 +1,13 @@
 /*!
   \file initializer.hpp
-  \brief Snippets for initializing the workspace for simulation. (e.g. Setting up field realizations, gravitational potentials, comoving curvature perturbations, etc.)
- 
+  \author Siyang Ling
+  \brief Snippets for initializing workpaces. (e.g. field initial conditions, etc)
+
+  Contains a collection of lambda functions used to initialize the workspace for simulation.
+  Each lambda function `initializer` is meant to be passed to a workspace constructor `Workspace(param, initializer)`.
+  The use of lambda's makes it easy to switch between `param` types and `workspace` types.
+  Moreover, in order for easy switching between CPU code and GPU code, the initializers compute everything on CPU first,
+  and then decide whether the results should be copied to CPU or GPU memory.
 */
 #ifndef INITIALIZER_HPP
 #define INITIALIZER_HPP
@@ -23,7 +29,7 @@
 #define ALGORITHM_NAMESPACE std
 #endif
 
-// Initialize a field and its derivative from a white noise power spectrum with cutoff k_ast
+/*! \brief Initialize a field and its derivative from a white noise power spectrum with cutoff k_ast. */
 inline auto unperturbed_grf =
   [](const auto param, auto &workspace) {
     Spectrum P_f = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.varphi_std_dev, param.k_ast, 0);
@@ -39,7 +45,7 @@ inline auto unperturbed_grf =
   };
 
 
-// Initialize a field and its derivative from a white noise power spectrum with cutoff k_ast
+/*! \brief Initialize a field and its derivative from a white noise power spectrum with cutoff k_ast, plus homogeneous background. */
 inline auto unperturbed_grf_with_background =
   [](const auto param, auto &workspace) {
     Spectrum P_f = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.varphi_std_dev, param.k_ast, 0);
@@ -55,7 +61,9 @@ inline auto unperturbed_grf_with_background =
   };
 
 
-/*
+/*!
+  \brief Setup a scalar field with inhomogeneous Gaussian random initial conditions.
+
   Initialize a field and its derivative from a white noise power spectrum with cutoff k_ast,
   but with a large scale perturbation specified by Psi.
   Psi is initialized from a scale-invariant power spectrum with cutoff k_Psi.
@@ -80,6 +88,7 @@ inline auto perturbed_grf =
   };
 
 
+/*! \brief Same as perturbed_grf, but does not store `Psi` in `workspace` to save memory. */
 inline auto perturbed_grf_without_saving_Psi =
   [](const auto param, auto &workspace) {
     Spectrum P_Psi = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
@@ -96,6 +105,7 @@ inline auto perturbed_grf_without_saving_Psi =
   };
 
 
+/*! \brief Same as unperturbed_grf, but with an extra scale-invariant `Psi`. */
 inline auto unperturbed_grf_with_Psi =
   [](const auto param, auto &workspace) {
     Spectrum P_Psi = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
@@ -114,7 +124,7 @@ inline auto unperturbed_grf_with_Psi =
   };
 
 
-// Initialize a homogeneous Gaussian random field and some scale invariant curvature perturbation.
+/*! \brief Initialize a homogeneous Gaussian random field and some scale invariant curvature perturbation. */
 inline auto unperturbed_grf_and_fixed_curvature =
   [](const auto param, auto &workspace) {
     Spectrum P_Psi = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
@@ -132,7 +142,11 @@ inline auto unperturbed_grf_and_fixed_curvature =
     ALGORITHM_NAMESPACE::copy(Psi.begin(), Psi.end(), workspace.Psi.begin());
   };
 
-// Initialize an inhomogeneous Gaussian random field and the fft of some scale invariant comoving curvature perturbation.
+/*! 
+  \brief Initialize an inhomogeneous Gaussian random field and the fft of some scale invariant comoving curvature perturbation. 
+  
+  This is the procedure used for section 4.2.2 of the paper.
+*/
 inline auto perturbed_grf_and_comoving_curvature_fft =
   [](const auto param, auto &workspace) {
     using namespace std::numbers;
@@ -193,8 +207,8 @@ inline auto perturbed_grf_and_comoving_curvature_fft =
 
 
 
-/*
-  Initialize a homogeneous field with amplitude f and time derivative dt_f.
+/*!
+  \brief Initialize a homogeneous field with amplitude f and time derivative dt_f.
   For testing the numerical code.
 */
 inline auto homogeneous_field =
@@ -210,8 +224,8 @@ inline auto homogeneous_field =
   };
 
 
-/*
-  Initialize a homogeneous field with amplitude f, plus scale-invariant perturbations (resembling quantum fluctutations).
+/*!
+  \brief Initialize a homogeneous field with amplitude f, plus scale-invariant perturbations (resembling quantum fluctutations).
 */
 inline auto homogeneous_field_with_fluctuations =
   [](const auto param, auto &workspace) {
@@ -230,8 +244,8 @@ inline auto homogeneous_field_with_fluctuations =
   };
 
 
-/*
-  Plane wave initial condition.
+/*!
+  \brief Plane wave initial condition.
   For testing the numerical code.
 */
 inline auto plane_wave =
@@ -255,9 +269,8 @@ inline auto plane_wave =
   };
 
 
-/*
-  Wave packet initial condition.
-  For understanding evolution of a wave packet in gravitational potential well.
+/*!
+  \brief Wave packet initial condition.
 */
 inline auto wave_packet =
   [](const auto param, auto &workspace) {

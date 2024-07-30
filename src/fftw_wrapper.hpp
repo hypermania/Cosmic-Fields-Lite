@@ -1,3 +1,8 @@
+/*! 
+  \file fftw_wrapper.hpp
+  \author Siyang Ling
+  \brief Wrapper for FFTW library.
+*/
 #ifndef FFTW_WRAPPER_HPP
 #define FFTW_WRAPPER_HPP
 
@@ -7,8 +12,8 @@
 #include <fftw3.h>
 
 
-/*
-  Wrapper for various fftw functions for a N*N*N grid.
+/*!
+  \brief Wrapper for various FFTW functions for a \f$ N^3 \f$ grid.
 */
 struct fftwWrapper {
   int N;

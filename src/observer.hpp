@@ -1,7 +1,7 @@
 /*! 
   \file observer.hpp
+  \author Siyang Ling
   \brief Implements "observers", which controls what gets saved during simulations.
-  
 */
 
 #ifndef OBSERVER_HPP

@@ -1,3 +1,8 @@
+/*!
+  \file midpoint.hpp
+  \author Siyang Ling
+  \brief Midpoint method implementation for odeint stepper.
+*/
 #ifndef MIDPOINT_HPP
 #define MIDPOINT_HPP
 

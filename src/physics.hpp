@@ -1,7 +1,7 @@
 /*!
   \file physics.hpp
+  \author Siyang Ling
   \brief Collection of repeatedly used physics formulas. (e.g. FRW cosmology related formulas)
- 
 */
 #ifndef PHYSICS_HPP
 #define PHYSICS_HPP

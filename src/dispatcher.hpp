@@ -1,3 +1,8 @@
+/*!
+  \file dispatcher.hpp
+  \author Siyang Ling
+  \brief Automatically dispatching between using FFTW and CUFFT libraries.
+*/
 #ifndef DISPATCHER_HPP
 #define DISPATCHER_HPP
 

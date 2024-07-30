@@ -1,3 +1,8 @@
+/*! 
+  \file cuda_wrapper.cuh
+  \author Siyang Ling
+  \brief Wrapper for CUDA Toolkit.
+*/
 #ifndef CUDA_WRAPPER_CUH
 #define CUDA_WRAPPER_CUH
 
@@ -46,9 +51,8 @@ void copy_vector(Eigen::VectorXd &out, const thrust::device_vector<double> &in);
 
 void show_gpu_memory_usage(void);
 
-/*
-  Wrapper for 3D cufftPlan3d.
-  Performs double to complex double FFT for a N*N*N grid.
+/*!
+  \brief Wrapper for 3D cufftPlan3d. Performs double to complex double FFT for a \f$ N^3 \f$ grid.
 */
 struct cufftWrapperD2Z {
   int N;
@@ -64,9 +68,9 @@ struct cufftWrapperD2Z {
 };
 
 
-/*
-  Wrapper for 3D cufftPlanMany.
-  Performs two double to complex double FFT for a N*N*N grid.
+/*!
+  \brief Wrapper for 3D cufftPlanMany.
+  Performs two double to complex double FFT for a \f$ N^3 \f$ grid.
 */
 struct cufftWrapperBatchedD2Z {
   int N;
@@ -82,7 +86,7 @@ struct cufftWrapperBatchedD2Z {
 };
 
 /*
-  Wrapper for various cufft functions for a N*N*N grid.
+  \brief Wrapper for various cufft functions for a \f$ N^3 \f$ grid.
   Different cufft plans share the same work area so that GPU memory usage is minimized.
 */
 struct cufftWrapper {
@@ -105,7 +109,7 @@ struct cufftWrapper {
 };
 
 /*
-  Wrapper for various cufft functions for a N*N*N grid.
+  \brief Wrapper for various cufft functions for a \f$ N^3 \f$ grid.
   Different cufft plans share the same work area so that GPU memory usage is minimized.
 */
 struct cufftWrapperNoBatching {

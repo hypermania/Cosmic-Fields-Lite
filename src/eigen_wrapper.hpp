@@ -1,3 +1,8 @@
+/*!
+  \file eigen_wrapper.hpp
+  \author Siyang Ling
+  \brief Wrap some Eigen functionalites.
+*/
 #ifndef EIGEN_WRAPPER_HPP
 #define EIGEN_WRAPPER_HPP
 
