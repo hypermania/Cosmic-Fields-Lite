@@ -17,10 +17,10 @@
 #endif
 
 
-// An empty placeholder object
+/*! \brief An empty placeholder object */
 struct empty {};
 
-// Dispatcher for fftWrapper* types
+/*! \brief Dispatcher for fftWrapper* types */
 template<typename Vector>
 struct fftWrapperDispatcher {
   typedef empty D2Z;
