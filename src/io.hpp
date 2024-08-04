@@ -1,3 +1,8 @@
+/*! 
+  \file io.hpp
+  \author Siyang Ling
+  \brief Input/output utilities.
+*/
 #ifndef IO_HPP
 #define IO_HPP
 #include <cstdlib>

@@ -51,9 +51,7 @@ void copy_vector(Eigen::VectorXd &out, const thrust::device_vector<double> &in);
 
 void show_gpu_memory_usage(void);
 
-/*!
-  \brief Wrapper for 3D cufftPlan3d. Performs double to complex double FFT for a \f$ N^3 \f$ grid.
-*/
+// Wrapper for 3D cufftPlan3d. Performs double to complex double FFT for a \f$ N^3 \f$ grid.
 struct cufftWrapperD2Z {
   int N;
   cufftHandle plan;
@@ -68,10 +66,7 @@ struct cufftWrapperD2Z {
 };
 
 
-/*!
-  \brief Wrapper for 3D cufftPlanMany.
-  Performs two double to complex double FFT for a \f$ N^3 \f$ grid.
-*/
+// Wrapper for 3D cufftPlanMany. Performs two double to complex double FFT for a \f$ N^3 \f$ grid.
 struct cufftWrapperBatchedD2Z {
   int N;
   cufftHandle plan;
@@ -85,9 +80,10 @@ struct cufftWrapperBatchedD2Z {
   cufftWrapperBatchedD2Z &operator=(cufftWrapperBatchedD2Z &&) = delete;
 };
 
-/*
-  \brief Wrapper for various cufft functions for a \f$ N^3 \f$ grid.
-  Different cufft plans share the same work area so that GPU memory usage is minimized.
+/*!
+  \brief Wrapper for various cufft functions for a \f$ N^3 \f$ grid. Similar to fftwWrapper.
+
+  See <https://docs.nvidia.com/cuda/cufft/index.html>.
 */
 struct cufftWrapper {
   int N;
@@ -108,9 +104,11 @@ struct cufftWrapper {
   cufftWrapper &operator=(cufftWrapper &&) = delete;
 };
 
-/*
-  \brief Wrapper for various cufft functions for a \f$ N^3 \f$ grid.
-  Different cufft plans share the same work area so that GPU memory usage is minimized.
+/*!
+  \brief Wrapper for various cufft functions for a \f$ N^3 \f$ grid. Similar to fftwWrapper.
+
+  Uses less GPU memory than cufftWrapper.
+  See <https://docs.nvidia.com/cuda/cufft/index.html>.
 */
 struct cufftWrapperNoBatching {
   int N;

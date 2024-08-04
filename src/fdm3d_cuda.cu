@@ -122,7 +122,7 @@ void cutoff_fourier_kernel(const double *in, double *out, const long long int N,
   int b = blockDim.y * blockIdx.y + threadIdx.y;
   int c = blockDim.z * blockIdx.z + threadIdx.z;
 
-  double scale_diff = N / M;
+  double scale_diff = static_cast<double>(N) / static_cast<double>(M);
   double scaling = 1.0 / (scale_diff * scale_diff * scale_diff);
   
   int half_M = M/2;
@@ -218,14 +218,12 @@ thrust::device_vector<double> compute_cutoff_fouriers(const long long int N, con
   return cutoff_fft;
 }
 
-void compute_inverse_laplacian_test(const long long int N, const double L,
-				    thrust::device_vector<double> &fft)
-{
-  assert(N % 8 == 0);
+// void compute_inverse_laplacian_test(const long long int N, const double L,
+// 				    thrust::device_vector<double> &fft)
+// {
+//   assert(N % 8 == 0);
 
-  dim3 threadsPerBlock(8, 4, 4);
-  dim3 numBlocks((int)N/8, (int)N/4, (int)N/4);
-  compute_inverse_laplacian_kernel<<<numBlocks, threadsPerBlock>>>(thrust::raw_pointer_cast(fft.data()), N, L);
-}
-
-
+//   dim3 threadsPerBlock(8, 4, 4);
+//   dim3 numBlocks((int)N/8, (int)N/4, (int)N/4);
+//   compute_inverse_laplacian_kernel<<<numBlocks, threadsPerBlock>>>(thrust::raw_pointer_cast(fft.data()), N, L);
+// }
