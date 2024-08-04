@@ -30,7 +30,7 @@ void sum_power_kernel(const double *fft, double *spectrum, const long long int N
 
 __global__
 void sum_mode_power_kernel(const double *ffts, double *spectrum,
-			   const long long int N, const double L, const double m)
+			   const long long int N, const double L, const double m, const double a_t)
 {
   using namespace std::numbers;
   int a = blockDim.x * blockIdx.x + threadIdx.x;
@@ -55,7 +55,7 @@ void sum_mode_power_kernel(const double *ffts, double *spectrum,
   // double omega_k_sqr = m * m + (2 * pi / L) * (2 * pi / L) * s_sqr;
   
   double val = (f_k_re * f_k_re + f_k_im * f_k_im)
-    + (dtf_k_re * dtf_k_re + dtf_k_im * dtf_k_im) / (m * m + (2 * pi / L) * (2 * pi / L) * s_sqr);
+    + (dtf_k_re * dtf_k_re + dtf_k_im * dtf_k_im) / (m * m + (2 * pi / L) * (2 * pi / L) * s_sqr / (a_t * a_t));
   
   // This code will not produce the same result each time because fp addition is not associative.
   atomicAdd(&spectrum[s_sqr], val);
@@ -141,7 +141,7 @@ void cutoff_fourier_kernel(const double *in, double *out, const long long int N,
 }
 
 
-thrust::device_vector<double> compute_mode_power_spectrum(const long long int N, const double L, const double m,
+thrust::device_vector<double> compute_mode_power_spectrum(const long long int N, const double L, const double m, const double a_t,
 							  thrust::device_vector<double> &state,
 							  fftWrapperDispatcher<thrust::device_vector<double>>::Generic &fft_wrapper)
 {
@@ -153,7 +153,7 @@ thrust::device_vector<double> compute_mode_power_spectrum(const long long int N,
 
   dim3 threadsPerBlock(8, 4, 4);
   dim3 numBlocks((int)N/8, (int)N/4, (int)N/4);
-  sum_mode_power_kernel<<<numBlocks, threadsPerBlock>>>(thrust::raw_pointer_cast(ffts.data()), thrust::raw_pointer_cast(spectrum.data()), N, L, m);
+  sum_mode_power_kernel<<<numBlocks, threadsPerBlock>>>(thrust::raw_pointer_cast(ffts.data()), thrust::raw_pointer_cast(spectrum.data()), N, L, m, a_t);
 
   return spectrum;
 }

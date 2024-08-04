@@ -16,7 +16,7 @@
 
 #include "fdm3d.hpp"
 
-thrust::device_vector<double> compute_mode_power_spectrum(const long long int N, const double L, const double m,
+thrust::device_vector<double> compute_mode_power_spectrum(const long long int N, const double L, const double m, const double a_t,
 							  thrust::device_vector<double> &state,
 							  fftWrapperDispatcher<thrust::device_vector<double>>::Generic &fft_wrapper);
 

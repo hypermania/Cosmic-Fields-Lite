@@ -33,7 +33,7 @@ Eigen::VectorXd compute_power_spectrum(const long long int N,
   return spectrum;
 }
 
-Eigen::VectorXd compute_mode_power_spectrum(const long long int N, const double L, const double m,
+Eigen::VectorXd compute_mode_power_spectrum(const long long int N, const double L, const double m, const double a_t,
 					    Eigen::VectorXd &state,
 					    fftWrapperDispatcher<Eigen::VectorXd>::Generic &fft_wrapper)
 {
@@ -63,7 +63,7 @@ Eigen::VectorXd compute_mode_power_spectrum(const long long int N, const double 
 	double dt_phi_k_re = dt_phi_k(2 * idx + 0);
 	double dt_phi_k_im = dt_phi_k(2 * idx + 1);
 	spectrum(s_sqr) += phi_k_re * phi_k_re + phi_k_im * phi_k_im
-	  + (dt_phi_k_re * dt_phi_k_re + dt_phi_k_im * dt_phi_k_im) / (m * m + (2 * pi / L) * (2 * pi / L) * s_sqr);
+	  + (dt_phi_k_re * dt_phi_k_re + dt_phi_k_im * dt_phi_k_im) / (m * m + (2 * pi / L) * (2 * pi / L) * s_sqr / (a_t * a_t));
       }
     }
   }

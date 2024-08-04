@@ -47,6 +47,7 @@ Eigen::VectorXd compute_power_spectrum(const long long int N,
   \param N Number of lattice points.
   \param L Box size.
   \param m Mass \f$ m \f$ of (free) scalar field.
+  \param a_t Current scale factor.
   \param state The state \f$ (\varphi, \dot{\varphi}) \f$ of a scalar field on a 3D lattice. 
   Should be a vector of size \f$ 2 N^3 \f$, with the first half (first \f$ N^3 \f$ indices) containing \f$ \varphi \f$, and the second half containing \f$ \dot{\varphi} \f$.
   \param fft_wrapper A fftwWrapper initialized to do Fourier transforms on grid size \f$ N \f$.
@@ -54,16 +55,20 @@ Eigen::VectorXd compute_power_spectrum(const long long int N,
   Specifically:
   \f{eqnarray*}{
   \mathrm{output}[s] &=& \sum_{i^2+j^2+k^2=s} |\tilde{\varphi}_{i,j,k}|^2 + \frac{|\dot{\tilde{\varphi}}_{i,j,k}|^2}{\omega_k^2} \\
-  \omega_k^2 &=& m^2 + s k_\mathrm{IR}^2
+  \omega_k^2 &=& m^2 + s k_\mathrm{IR}^2 / a^2(t)
   \f}
   Here, \f$ \tilde{\varphi}_{a,b,c} \f$ and \f$ \dot{\tilde{\varphi}}_{a,b,c} \f$ are the DFT's,
   \f$ (i,j,k) \f$ labels a site on the reciprocal lattice, and \f$ -N/2 + 1 \leq i,j,k \leq N/2 \f$;
   see <https://garrettgoon.com/gaussian-fields/> for details on this convention.
   Also see compute_power_spectrum.
 */
-Eigen::VectorXd compute_mode_power_spectrum(const long long int N, const double L, const double m,
+Eigen::VectorXd compute_mode_power_spectrum(const long long int N, const double L, const double m, const double a_t,
 					    Eigen::VectorXd &state,
 					    fftWrapperDispatcher<Eigen::VectorXd>::Generic &fft_wrapper);
+
+// Eigen::VectorXd compute_mode_power_spectrum(const long long int N, const double L, const double m,
+// 					    Eigen::VectorXd &state,
+// 					    fftWrapperDispatcher<Eigen::VectorXd>::Generic &fft_wrapper);
 
 /*! 
   \brief Compute the inverse Laplacian of a field. AKA solve the Poisson equation.

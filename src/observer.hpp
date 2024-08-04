@@ -57,11 +57,13 @@ struct ConstIntervalObserver {
   void operator()(const State &x, double t)
   {
     if(t >= t_last + t_interval || t == t_end || t == t_start) {
-      	  long long int N = workspace.N;
-	  double L = workspace.L;
-	  double m = workspace.m;
+      const long long int N = workspace.N;
+      const double L = workspace.L;
+      const double m = workspace.m;
+      const double a_t = workspace.cosmology.a(t);
+      
       if constexpr(save_field_spectrum) {
-	  Vector varphi_plus_spectrum = compute_mode_power_spectrum(N, L, m, workspace.state, workspace.fft_wrapper);
+	  Vector varphi_plus_spectrum = compute_mode_power_spectrum(N, L, m, a_t, workspace.state, workspace.fft_wrapper);
 	  Eigen::VectorXd varphi_plus_spectrum_out(varphi_plus_spectrum.size());
 	  copy_vector(varphi_plus_spectrum_out, varphi_plus_spectrum);
 	  write_VectorXd_to_filename_template(varphi_plus_spectrum_out, dir + "varphi_plus_spectrum_%d.dat", idx);

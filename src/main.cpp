@@ -266,7 +266,7 @@ void generate_wkb_solutions(void)
       write_VectorXd_to_filename_template(rho_axis_average, dir + "wkb_rho_axis_average_%d.dat", i);
     }
     {
-      auto varphi_plus_spectrum = compute_mode_power_spectrum(N, param.L, param.m, workspace.state, workspace.fft_wrapper);
+      auto varphi_plus_spectrum = compute_mode_power_spectrum(N, param.L, param.m, workspace.cosmology.a(t_eval), workspace.state, workspace.fft_wrapper);
       write_VectorXd_to_filename_template(varphi_plus_spectrum, dir + "wkb_varphi_plus_spectrum_%d.dat", i);
     }
   }
