@@ -81,7 +81,7 @@ I also included header-only libraries [Eigen 3.4.0](https://eigen.tuxfamily.org)
 **Note: If you have a CUDA compatible NVIDIA GPU, using CUDA is highly recommended. In our case, it produced more than 10 times speedup.**
 
 ## Documentation
-	LaTeX version of documentation is in `documentation.pdf`. If you have doxygen, you can also build an html version by running `doxygen doxygen.config`.
+LaTeX version of documentation is in `documentation.pdf`. If you have doxygen, you can also build an html version by running `doxygen doxygen.config`.
 
 ## Convenience utilities for visualizing output
 Two Mathematica notebooks `spectra.nb`, `snapshots.nb` and a python script `plot_util.py` are included for visualizing outputs from the program. By default, running the entire notebook / python script will read sample data from `output/Growth_and_FS` and produce spectra and snapshots. If you generate new outputs from the program, you just need to change `dir` or `project_dir` variables to the new output directory.

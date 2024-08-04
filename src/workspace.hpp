@@ -43,30 +43,35 @@ concept HasPsiApproximationParameters = requires (Param param)
 
 
 /*!
-  \brief A generic workspace for storing temporary 
+  \brief A generic workspace for storing temporary objects within simulation.
 
   WorkspaceGeneric contains everything used during simulations, including the field state, gravitational potential, parameters, etc.
-  It is initialized by a Param struct (containing just a few numbers) and an "initializer" (see initializer.hpp).
-
-  The lifetime of objects in the workspace are managed by us (this codebase), instead of external libraries (e.g. odeint).
+  The numerical integrator, observers or other utilities will read from or write to one `WorkspaceGeneric` instance, 
+  so that data can be shared between different functionalities.
+  The user is responsible for maintaining the members variables within the workspace.
+  
+  At construction, `WorkspaceGeneric` takes in a `param` struct (containing just a few numbers) and an `initializer` function (see initializer.hpp).
+  Typically the values in `param` are copied to fields in the workspace with the same name.
+  The initializer then use the `param` and its own logic to fill in the workspace. (e.g. initial conditions, curvature perturbations)
+  Note that the `Vector`'s in the workspace are initially empty, and they need to be resized (via `vec.resize()`) to be written to.
 */
 template<typename Vector>
 struct WorkspaceGeneric {
   typedef Vector State;
-  long long int N;
-  double L;
-  double m;
-  StaticEOSCosmology cosmology{};
-  State state;
-  double lambda{0};
-  double f_a{1.0};
+  long long int N; /*!< Number of lattice points. */
+  double L; /*!< Box size. */
+  double m; /*!< Mass of field. */
+  StaticEOSCosmology cosmology{}; /*!< FRW cosmology. */
+  State state; /*!< The full equation state, usually a vector like \f$ (\varphi, \dot{\varphi}) \f$ (for 2nd order equations). */
+  double lambda{0}; /*!< Quartic self-interaction coupling constant. */
+  double f_a{1.0}; /*!< A scale in the monodromy potential. */
   Vector Psi;
   Vector dPsidt;
   Vector Psi_fft;
   Vector dPsidt_fft;
-  Vector R_fft;
-  std::vector<double> t_list;
-  typename fftWrapperDispatcher<Vector>::Generic fft_wrapper;
+  Vector R_fft; /*!< Usually used to store comoving curvature perturbations. */
+  std::vector<double> t_list; /*!< The list of coordinate times at which a save is stored. */
+  typename fftWrapperDispatcher<Vector>::Generic fft_wrapper; /*!< A FFT wrapper for 3D lattice with size \f$ N \f$. */
 
   bool Psi_approximation_initialized{false};
   long long int M;
