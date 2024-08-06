@@ -1,6 +1,6 @@
-# lite-cosmic-sim
+# Cosmic-Fields-Lite
 
-**lite-cosmic-sim** is a lightweight and modular framework for performing field simulations in cosmology. This framework was used for studying free-streaming of wave dark matter; see [arXiv:XXXX.XXXX](https://arxiv.org) for the study and these [youtube videos](https://www.youtube.com/playlist?list=PLecJrnvnk5c7Iaqi-Wq7xvqk1Msgxn5pk) for visualization. The codebase contains several field equations on both CPU and GPU (CUDA), offering choices for numerical methods and simulation outputs.
+**Cosmic-Fields-Lite** is a lightweight and modular framework for performing field simulations in cosmology. This framework was used for studying free-streaming of wave dark matter; see [arXiv:XXXX.XXXX](https://arxiv.org) for the study and these [youtube videos](https://www.youtube.com/playlist?list=PLecJrnvnk5c7Iaqi-Wq7xvqk1Msgxn5pk) for visualization. The codebase contains several field equations on both CPU and GPU (CUDA), offering choices for numerical methods and simulation outputs.
 
 ## Overview
 This codebase aims to be:
@@ -73,7 +73,7 @@ I also included header-only libraries [Eigen 3.4.0](https://eigen.tuxfamily.org)
 
 `Makefile` is used for build system. I have tested compilation on Linux and MacOS systems. To compile the project:
 
-* Download the project with (for example) `git clone https://github.com/hypermania/lite-cosmic-sim`.
+* Download the project with (for example) `git clone https://github.com/hypermania/Cosmic-Fields-Lite`.
 * (If default settings don't work:) Modify the `Makefile` so that it knows where your fftw or CUDA include files / library files are.
 * If you have CUDA Toolkit installed, simply run `make -j`.
 * If you don't have CUDA Toolkit, run `make -j disable-cuda=true`. (I use compiler flags to comment out CUDA-dependent code.  e.g. CudaComovingCurvatureEquationInFRW)
