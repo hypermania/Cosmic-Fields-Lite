@@ -1,6 +1,6 @@
 # Cosmic-Fields-Lite
 
-**Cosmic-Fields-Lite** is a lightweight and modular framework for performing field simulations in cosmology. This framework was used for studying free-streaming of wave dark matter; see [arXiv:XXXX.XXXX](https://arxiv.org) for the study and these [youtube videos](https://www.youtube.com/playlist?list=PLecJrnvnk5c7Iaqi-Wq7xvqk1Msgxn5pk) for visualization. The codebase contains several field equations on both CPU and GPU (CUDA), offering choices for numerical methods and simulation outputs.
+**Cosmic-Fields-Lite** is a lightweight and modular framework for performing field simulations in cosmology. This framework was used for studying free-streaming of wave dark matter; see [arXiv:2408.05591](https://arxiv.org/abs/2408.05591) for the study and these [youtube videos](https://www.youtube.com/playlist?list=PLecJrnvnk5c7Iaqi-Wq7xvqk1Msgxn5pk) for visualization. The codebase contains several field equations on both CPU and GPU (CUDA), offering choices for numerical methods and simulation outputs.
 
 ## Overview
 This codebase aims to be:
@@ -8,7 +8,7 @@ This codebase aims to be:
 1. As fast as possible. Users should be able to write code that exhausts hardward potential within this framework.
 2. Easily modifiable and extensible. Users should be able to focus on physics-relevant code, such as that for setting initial conditions or the field equation.
 
-To achieve these goals, the framework is written in a modular structure. This allows users to easily switch between different initial conditions, field equations, output methods, and even between using CPUs or GPUs for computation. Users have to and only have to provide the low level implementation for the physics-relevant code. This means users have full control over optimization of core routines, and they are not limited to a specific set of provided features. This flexibility makes it easy for the user to test new ideas, which is useful in research.
+To achieve these goals, the framework is written in a modular structure. This allows users to easily switch between different initial conditions, field equations, output methods, and even between using CPUs or GPUs for computation. Users have to and only have to provide the low level implementation for the physics-relevant code. This means users have full control over optimization of core routines, and they are not limited to a specific set of provided features. This flexibility makes it easy for the user to test new ideas.
 
 ## Sample usage
 The following code initializes a homogeneous Klein Gordon field with (initially) unit field strength and zero time derivative. Then the field is evolved from `t=0` to `t=10`. Field and density spectra are saved to disk per unit time.
