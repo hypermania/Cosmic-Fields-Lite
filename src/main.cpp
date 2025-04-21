@@ -23,6 +23,7 @@
 #include "observer.hpp"
 #include "midpoint.hpp"
 #include "wkb.hpp"
+#include "field_booster.hpp"
 
 #ifndef DISABLE_CUDA
 #include <thrust/device_vector.h>
@@ -65,19 +66,82 @@ struct MyParam {
 
 void solve_field_equation(void);
 void generate_wkb_solutions(void);
-
+void generate_ic(void);
 
 int main(int argc, char **argv){
   // Runs the simulation described in Section 4.2.2 of paper.
   
   // Solve scalar field equation in a background of comoving curvature perturbation.
   // Save output to output/Growth_and_FS/
-  solve_field_equation();
+  // solve_field_equation();
 
   // Optional: Use WKB solution to extend the simulation.
   //generate_wkb_solutions();
+
+  generate_ic();
 }  
 
+void generate_ic(void)
+{
+  // Set the PRNG seed.
+  RandomNormal::set_generator_seed(0);
+
+  
+  // Set the directory for output.
+  const std::string dir = "output/scalar_IC/";
+  prepare_directory_for_output(dir);
+
+  
+  // Set parameters for the simulation.
+  MyParam param
+    {
+      .N = 384, // Lattice points per axis
+      .L = 384 * 0.05, // Size of the box
+      // ULDM params
+      .m = 1.0, // Mass of scalar field
+      .lambda = 0, // Lambda phi^4 coupling strength
+      //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
+      .k_ast = 10.0, // Characteristic momentum
+      .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
+      .varphi_std_dev = 1.0, // Standard deviation of field
+      .Psi_std_dev = 0.2, // Standard deviation of metric perturbation Psi
+      // FRW metric params
+      .a1 = 1.0,
+      .H1 = 0.05,
+      .t1 = 1.0 / (2 * param.H1),
+      // Start and end time for numerical integration, and time interval between saves
+      .t_start = param.t1,
+      .t_end = param.t_start + (pow(3.5 / param.a1, 2) - 1.0) / (2 * param.H1),
+      .t_interval = 49.99, // Save a snapshot every t_interval
+      // Numerical method parameter
+      .delta_t = 0.5, // Time step for numerical integration
+      // Psi approximation parameter
+      .M = 128 // Lattice points for storing / computing Psi
+    };
+  print_param(param);
+  save_param_for_Mathematica(param, dir);
+
+  
+  typedef KleinGordonEquation Equation;
+  typedef typename Equation::Workspace Workspace;
+  typedef typename Equation::State State;
+
+  
+  // Workspace workspace(param, perturbed_grf_without_saving_Psi);
+  Workspace workspace(param, unperturbed_grf);
+  
+  Spectrum P_Psi = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
+  Eigen::VectorXd Psi = generate_gaussian_random_field(param.N, param.L, P_Psi);
+  long long int field_size = workspace.state.size() / 2;
+  Eigen::VectorXd varphi = workspace.state.head(field_size);
+  Eigen::VectorXd dt_varphi = workspace.state.tail(field_size);
+  boost_klein_gordon_field(varphi, dt_varphi, Psi, param.N, param.L, param.m);
+
+  {
+    write_VectorXd_to_file(varphi, dir + "varphi.dat");
+    write_VectorXd_to_file(dt_varphi, dir + "dt_varphi.dat");
+  }
+}
 
 void solve_field_equation(void)
 {
