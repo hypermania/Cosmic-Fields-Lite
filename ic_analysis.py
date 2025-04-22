@@ -1,5 +1,6 @@
 import numpy as np
 from numpy import sqrt, pi, sin, cos, log, log10, exp, tanh, sinh, cosh
+import numpy.fft as fft
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
@@ -89,11 +90,6 @@ dt_varphi = np.fromfile(project_dir + r"dt_varphi.dat", dtype=np.float64)
 
 varphi_grid = varphi.reshape((param["N"], param["N"], param["N"]))
 dt_varphi_grid = dt_varphi.reshape((param["N"], param["N"], param["N"]))
-#dx_varphi_grid = 
-rho = dt_varphi_grid * dt_varphi_grid
-rho_mean = rho.mean()
-delta = (rho / rho_mean) - 1.0
-delta_averaged = delta.mean(axis=0)
 
 
 
@@ -117,22 +113,51 @@ def compute_gradient(grid):
     
     return [dx_grid, dy_grid, dz_grid]
 
+
 dxyz_varphi = compute_gradient(varphi_grid)
-dyz_average_varphi = [f.mean(axis=0) for f in dxyz_varphi]
+dyz_varphi_averaged = [f.mean(axis=0) for f in dxyz_varphi]
 
-# Old code
+q_xyz = [-di_varphi * dt_varphi_grid for di_varphi in dxyz_varphi]
+q_averaged = [f.mean(axis=0) for f in q_xyz]
 
-# rho_spectrum_list = load_list_of_arrays(project_dir, "rho_spectrum_([0-9]+).dat")
-# varphi_plus_spectrum_list = load_list_of_arrays(project_dir, "varphi_plus_spectrum_([0-9]+).dat")
-# delta_spectrum_list = [spectrum / (spectrum[0] / pow(param['N'], 6)) for spectrum in rho_spectrum_list]
+rho = 0.5 * dt_varphi_grid * dt_varphi_grid + 0.5 * sum([f * f for f in dxyz_varphi]) + 0.5 * varphi_grid * varphi_grid
+rho_mean = rho.mean()
+rho_averaged = rho.mean(axis=0)
+delta = (rho / rho_mean) - 1.0
+delta_averaged = delta.mean(axis=0)
+dt_varphi_averaged = dt_varphi_grid.mean(axis=0)
 
-# rho_average_list = load_list_of_arrays(project_dir, "rho_axis_average_([0-9]+).dat")
-# delta_average_grid_list = [np.reshape(rho / rho.mean() - 1.0, [param['N'],param['N']]) for rho in rho_average_list]
 
-# t_list = np.fromfile(project_dir + "t_list.dat", dtype=np.float64)
+def filter_k(array2d, max_s):
+    q_fft_2 = fft.rfft2(array2d)
+    for a in range(param["N"]):
+        for b in range(param["N"]//2+1):
+            a_shifted = a if (a <= param["N"]//2) else (param["N"]-a)
+            b_shifted = b if (b <= param["N"]//2) else (param["N"]-b)
+            s = a_shifted**2 + b_shifted**2
+            if s > max_s:
+                q_fft_2[a, b] = 0
+    q_filtered_2 = fft.irfft2(q_fft_2)
+    return q_filtered_2
 
-# delta_power_spectrum_list = utils.compute_power_spectrum_list(delta_spectrum_list)
 
+def filter_3d(f, max_s):
+    f_fft = fft.rfftn(f)
+    for a in range(param["N"]):
+        for b in range(param["N"]):
+            for c in range(param["N"]//2+1):
+                a_shifted = a if (a <= param["N"]//2) else (param["N"]-a)
+                b_shifted = b if (b <= param["N"]//2) else (param["N"]-b)
+                c_shifted = c if (c <= param["N"]//2) else (param["N"]-c)
+                s = a_shifted**2 + b_shifted**2 + c_shifted**2
+                if s > max_s:
+                    f_fft[a, b, c] = 0
+    return fft.irfftn(f_fft)
+
+
+q_averaged_filtered = [filter_k(q, 5) for q in q_averaged]
+
+q_filtered = [filter_3d(q, 30) for q in q_xyz]
 
 # Font Settings
 font_path = font_manager.findfont("Latin Modern Roman")
@@ -172,8 +197,8 @@ slice_labels = list(map(lambda x: '$' + str(x) + '$', slice_ticks))
 
 # Function to plot one snapshot
 def plot_slice(ax, grid, time=None):
-    cax = ax.imshow(grid, cmap=cmbColor, norm=colorNorm, aspect='equal')
-    ax.tick_params(axis="both",which="both",bottom=True,top=False,left=False,right=False,labelbottom=True,labeltop=False,labelleft=False,labelright=False,direction='in',length=5.0,width=0.5,reset=True)
+    cax = ax.imshow(grid, cmap=cmbColor, norm=colorNorm, aspect='equal', origin='lower')
+    ax.tick_params(axis="both",which="both",bottom=True,top=False,left=False,right=False,labelbottom=True,labeltop=False,labelleft=False,labelright=False,direction='in',length=2.0,width=0.5,reset=True)
     ax.set_xticks(slice_ticks / (param['L'] / param['N']))
     ax.set_xticklabels(slice_labels)
     for label in ax.get_xticklabels():
@@ -183,37 +208,57 @@ def plot_slice(ax, grid, time=None):
     cbar = ax.figure.colorbar(cax, cax=cax_colorbar, ax=ax)
     
 
-    
 
-fig = plt.figure(figsize=(1,1))
+
+fig = plt.figure(figsize=(2,2))
 #gs = fig.add_gridspec(1, 1, width_ratios=[1, 1], wspace=0, hspace=0)
 
 #ax = fig.add_subplot(gs[0, 0])
 ax = plt.axes()
-#plot_slice(ax, delta_averaged)
-x = np.linspace(0, param["L"] - param["L"] / param["N"], param["N"])
-X, Y = np.meshgrid(x, x)
-# u = X * 0.1  #np.cos(X)
-# v = Y * 0.1 #np.sin(Y)
-u = dyz_average_varphi[1]
-v = dyz_average_varphi[2]
+
+#x = np.linspace(0, param["L"] - param["L"] / param["N"], param["N"])
+x = np.linspace(0, param["N"] - 1, param["N"])
+X, Y = np.meshgrid(x, x, indexing='ij')
+# v = np.zeros(q_averaged_filtered[1].shape)
+# u = Y / 384. #np.ones(q_averaged_filtered[1].shape)
+# u = q_averaged[1]
+# v = q_averaged[2]
+u = q_xyz[1][0]
+v = q_xyz[2][0]
 
 
 spacing = 8
-X = X[0::spacing, 0::spacing]
-Y = Y[0::spacing, 0::spacing]
-u = u[0::spacing, 0::spacing]
-v = v[0::spacing, 0::spacing]
+X = X[(spacing//2)::spacing, (spacing//2)::spacing]
+Y = Y[(spacing//2)::spacing, (spacing//2)::spacing]
+u = u[(spacing//2)::spacing, (spacing//2)::spacing]
+v = v[(spacing//2)::spacing, (spacing//2)::spacing]
 
 ax.quiver(X, Y, u, v)
-
+plot_slice(ax, delta[0] / 2)
+#plot_slice(ax, dt_varphi_grid[0] / 10)
 
 #plt.show()
-plt.savefig('temp_figure.pdf', bbox_inches='tight', dpi=500)
+plt.savefig('temp_figure.pdf', bbox_inches='tight', dpi=1000)
 
 
 
-initial_power_spectrum = delta_power_spectrum_list[0]
+
+# q_filtered = [filter_3d(q, 30) for q in q_xyz]
+
+
+# fig = plt.figure(figsize=(2,2))
+# ax = plt.axes()
+# x = np.linspace(0, param["N"] - 1, param["N"])
+# to_plot = q_filtered[2].mean(axis=0).mean(axis=0)
+# ax.plot(x, to_plot)
+# plt.savefig('temp_figure.pdf', bbox_inches='tight', dpi=1000)
+
+
+
+
+
+
+
 
 # Function to plot one spectrum
 def plot_spectrum(ax, power_spectrum, initial_power_spectrum=None, time=None):
@@ -234,65 +279,3 @@ def plot_spectrum(ax, power_spectrum, initial_power_spectrum=None, time=None):
     
     ax.text(*mt_text_pos,r'$mt={:.0f}$'.format(param['m'] * time),fontsize=10,color='0')
 
-
-# Function to plot one snapshot
-def plot_slice(ax, grid, time=None):
-    cax = ax.imshow(grid, cmap=cmbColor, norm=colorNorm, aspect='equal')
-    ax.tick_params(axis="both",which="both",bottom=True,top=False,left=False,right=False,labelbottom=True,labeltop=False,labelleft=False,labelright=False,direction='in',length=5.0,width=0.5,reset=True)
-    ax.set_xticks(slice_ticks / (param['L'] / param['N']))
-    ax.set_xticklabels(slice_labels)
-    for label in ax.get_xticklabels():
-        label.set_fontproperties(font)
-    if param['H1'] != 0:
-        ax.set_xlabel(r'$a_i mx$',fontsize=15)
-    else:
-        ax.set_xlabel(r'$mx$',fontsize=15)
-    cax_colorbar = make_axes_locatable(ax).append_axes("right", size="5%", pad=0)
-    cbar = ax.figure.colorbar(cax, cax=cax_colorbar, ax=ax)
-    #cbar.set_label(r'$\delta$')
-    
-
-# Plotting
-x_bounds = [1.0e-2, 4]
-y_bounds = [1e-4, 1e1]
-log_aspect_ratio = log(y_bounds[1]/y_bounds[0]) / log(x_bounds[1]/x_bounds[0])
-
-mt_text_pos = [1.5e-2, 2]
-
-slice_ticks = np.array([0, 100, 200, 300])
-slice_labels = list(map(lambda x: '$' + str(x) + '$', slice_ticks))
-
-
-
-# With gravity
-fig = plt.figure(figsize=(6.4,7.2))
-gs = fig.add_gridspec(3, 2, width_ratios=[2, 1.05], wspace=0, hspace=0)
-
-initial_power_spectrum = delta_power_spectrum_list[0]
-
-# 1st row
-ax = fig.add_subplot(gs[0, 0])
-plot_spectrum(ax, delta_power_spectrum_list[0], time=t_list[0])
-
-ax = fig.add_subplot(gs[0, 1])
-plot_slice(ax, delta_average_grid_list[0])
-
-
-# 2nd row
-ax = fig.add_subplot(gs[1, 0])
-plot_spectrum(ax, np.array(delta_power_spectrum_list[1]), initial_power_spectrum=initial_power_spectrum, time=t_list[1])
-
-ax = fig.add_subplot(gs[1, 1])
-plot_slice(ax, delta_average_grid_list[1])
-
-
-# 3rd row
-ax = fig.add_subplot(gs[2, 0])
-plot_spectrum(ax, np.array(delta_power_spectrum_list[2]), initial_power_spectrum=initial_power_spectrum, time=t_list[2])
-
-ax = fig.add_subplot(gs[2, 1])
-plot_slice(ax, delta_average_grid_list[2])
-
-
-#plt.savefig('delta_spectrum_growth_and_fs.pdf', bbox_inches='tight', dpi=500)
-plt.show()

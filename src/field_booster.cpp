@@ -67,7 +67,7 @@ void boost_klein_gordon_field(Eigen::VectorXd &varphi, Eigen::VectorXd &dt_varph
   Equation eqn(workspace);
   auto stepper = runge_kutta4<State, double, State, double>();
 
-  const double delta_t = 0.2 / m;
+  const double delta_t = 0.01 / m;
   const double t_max = - theta.minCoeff() / m;
   const double t_min = - theta.maxCoeff() / m;
 

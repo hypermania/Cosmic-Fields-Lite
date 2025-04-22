@@ -101,7 +101,7 @@ void generate_ic(void)
       .m = 1.0, // Mass of scalar field
       .lambda = 0, // Lambda phi^4 coupling strength
       //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
-      .k_ast = 10.0, // Characteristic momentum
+      .k_ast = 2.0, // Characteristic momentum
       .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
       .varphi_std_dev = 1.0, // Standard deviation of field
       .Psi_std_dev = 0.2, // Standard deviation of metric perturbation Psi
@@ -126,15 +126,32 @@ void generate_ic(void)
   typedef typename Equation::Workspace Workspace;
   typedef typename Equation::State State;
 
+  Eigen::VectorXd varphi;
+  Eigen::VectorXd dt_varphi;
   
-  // Workspace workspace(param, perturbed_grf_without_saving_Psi);
-  Workspace workspace(param, unperturbed_grf);
+  {
+    // Workspace workspace(param, perturbed_grf_without_saving_Psi);
+    Workspace workspace(param, unperturbed_grf);
+    long long int field_size = workspace.state.size() / 2;
+    varphi = workspace.state.head(field_size);
+    dt_varphi = workspace.state.tail(field_size);
+  }
+
   
-  Spectrum P_Psi = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
-  Eigen::VectorXd Psi = generate_gaussian_random_field(param.N, param.L, P_Psi);
-  long long int field_size = workspace.state.size() / 2;
-  Eigen::VectorXd varphi = workspace.state.head(field_size);
-  Eigen::VectorXd dt_varphi = workspace.state.tail(field_size);
+  const long long int N = param.N;
+  Eigen::VectorXd Psi(N*N*N);
+  // Spectrum P_Psi = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
+  // Eigen::VectorXd Psi = generate_gaussian_random_field(param.N, param.L, P_Psi);
+
+  for(int a = 0; a < N; ++a){
+    for(int b = 0; b < N; ++b){
+      for(int c = 0; c < N; ++c){
+	Psi(IDX_OF(N, a, b, c)) = 0.5 * cos(2 * std::numbers::pi * c / N);
+      }
+    }
+  }
+
+  
   boost_klein_gordon_field(varphi, dt_varphi, Psi, param.N, param.L, param.m);
 
   {
