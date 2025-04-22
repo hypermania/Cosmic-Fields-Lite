@@ -126,16 +126,6 @@ void generate_ic(void)
   typedef typename Equation::Workspace Workspace;
   typedef typename Equation::State State;
 
-  Eigen::VectorXd varphi;
-  Eigen::VectorXd dt_varphi;
-  
-  {
-    // Workspace workspace(param, perturbed_grf_without_saving_Psi);
-    Workspace workspace(param, unperturbed_grf);
-    long long int field_size = workspace.state.size() / 2;
-    varphi = workspace.state.head(field_size);
-    dt_varphi = workspace.state.tail(field_size);
-  }
 
   
   const long long int N = param.N;
@@ -151,8 +141,32 @@ void generate_ic(void)
     }
   }
 
+  Eigen::VectorXd varphi;
+  Eigen::VectorXd dt_varphi;
   
+  {
+    // Workspace workspace(param, perturbed_grf_without_saving_Psi);
+    Workspace workspace(param, unperturbed_grf);
+    long long int field_size = workspace.state.size() / 2;
+    varphi = workspace.state.head(field_size);
+    dt_varphi = workspace.state.tail(field_size);
+  }
+
   boost_klein_gordon_field(varphi, dt_varphi, Psi, param.N, param.L, param.m);
+  
+  // Eigen::VectorXd varphi(N*N*N);
+  // Eigen::VectorXd dt_varphi(N*N*N);
+
+  // for(int a = 0; a < N; ++a){
+  //   for(int b = 0; b < N; ++b){
+  //     for(int c = 0; c < N; ++c){
+  // 	varphi(IDX_OF(N, a, b, c)) = cos(2 * std::numbers::pi * c / N);
+  // 	dt_varphi(IDX_OF(N, a, b, c)) = 1;
+  //     }
+  //   }
+  // }
+  
+
 
   {
     write_VectorXd_to_file(varphi, dir + "varphi.dat");

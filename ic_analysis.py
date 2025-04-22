@@ -157,7 +157,7 @@ def filter_3d(f, max_s):
 
 q_averaged_filtered = [filter_k(q, 5) for q in q_averaged]
 
-q_filtered = [filter_3d(q, 30) for q in q_xyz]
+q_filtered = [filter_3d(q, 5) for q in q_xyz]
 
 # Font Settings
 font_path = font_manager.findfont("Latin Modern Roman")
@@ -221,10 +221,12 @@ x = np.linspace(0, param["N"] - 1, param["N"])
 X, Y = np.meshgrid(x, x, indexing='ij')
 # v = np.zeros(q_averaged_filtered[1].shape)
 # u = Y / 384. #np.ones(q_averaged_filtered[1].shape)
+u = q_averaged_filtered[1]
+v = q_averaged_filtered[2]
 # u = q_averaged[1]
 # v = q_averaged[2]
-u = q_xyz[1][0]
-v = q_xyz[2][0]
+# u = q_xyz[1][0]
+# v = q_xyz[2][0]
 
 
 spacing = 8
@@ -233,9 +235,10 @@ Y = Y[(spacing//2)::spacing, (spacing//2)::spacing]
 u = u[(spacing//2)::spacing, (spacing//2)::spacing]
 v = v[(spacing//2)::spacing, (spacing//2)::spacing]
 
+#to_show = dt_varphi_grid[0] / 5
+to_show = filter_k(delta_averaged, 2)
 ax.quiver(X, Y, u, v)
-plot_slice(ax, delta[0] / 2)
-#plot_slice(ax, dt_varphi_grid[0] / 10)
+plot_slice(ax, to_show.transpose() )
 
 #plt.show()
 plt.savefig('temp_figure.pdf', bbox_inches='tight', dpi=1000)
