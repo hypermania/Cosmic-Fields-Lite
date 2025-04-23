@@ -129,30 +129,32 @@ void generate_ic(void)
 
   
   const long long int N = param.N;
-  Eigen::VectorXd Psi(N*N*N);
-  // Spectrum P_Psi = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
-  // Eigen::VectorXd Psi = generate_gaussian_random_field(param.N, param.L, P_Psi);
+  Eigen::VectorXd tau(N*N*N);
+  // Spectrum P_tau = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
+  // Eigen::VectorXd tau = generate_gaussian_random_field(param.N, param.L, P_tau);
 
   for(int a = 0; a < N; ++a){
     for(int b = 0; b < N; ++b){
       for(int c = 0; c < N; ++c){
-	Psi(IDX_OF(N, a, b, c)) = 0.5 * cos(2 * std::numbers::pi * c / N);
+	tau(IDX_OF(N, a, b, c)) = 0.5 * cos(2 * std::numbers::pi * c / N);
       }
     }
   }
 
-  Eigen::VectorXd varphi;
-  Eigen::VectorXd dt_varphi;
-  
-  {
-    // Workspace workspace(param, perturbed_grf_without_saving_Psi);
-    Workspace workspace(param, unperturbed_grf);
-    long long int field_size = workspace.state.size() / 2;
-    varphi = workspace.state.head(field_size);
-    dt_varphi = workspace.state.tail(field_size);
-  }
+  // Eigen::VectorXd varphi;
+  // Eigen::VectorXd dt_varphi;
+  // {
+  //   Workspace workspace(param, unperturbed_grf);
+  //   long long int field_size = workspace.state.size() / 2;
+  //   varphi = workspace.state.head(field_size);
+  //   dt_varphi = workspace.state.tail(field_size);
+  // }
 
-  boost_klein_gordon_field(varphi, dt_varphi, Psi, param.N, param.L, param.m);
+  Workspace workspace(param, unperturbed_grf);
+
+  Eigen::VectorXd state_new = boost_klein_gordon_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
+  Eigen::VectorXd varphi = state_new.head(N*N*N);
+  Eigen::VectorXd dt_varphi = state_new.tail(N*N*N);
   
   // Eigen::VectorXd varphi(N*N*N);
   // Eigen::VectorXd dt_varphi(N*N*N);
@@ -165,8 +167,6 @@ void generate_ic(void)
   //     }
   //   }
   // }
-  
-
 
   {
     write_VectorXd_to_file(varphi, dir + "varphi.dat");
