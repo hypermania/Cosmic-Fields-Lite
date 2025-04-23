@@ -186,3 +186,233 @@ void boost_klein_gordon_field(Eigen::VectorXd &varphi, Eigen::VectorXd &dt_varph
   varphi = varphi_new;
   dt_varphi = dt_varphi_new;
 }
+
+
+void boost_klein_gordon_field_v1(Eigen::VectorXd &varphi, Eigen::VectorXd &dt_varphi, const Eigen::VectorXd &theta,
+				 const long long int N, const double L, const double m)
+{
+  using namespace boost::numeric::odeint;
+  using namespace boost::math::interpolators;
+
+  
+  auto copy_initializer = [&](const auto param, auto &workspace) {
+    workspace.state.head(varphi.size()) = varphi;
+    workspace.state.tail(dt_varphi.size()) = dt_varphi;
+  };
+
+  
+  auto interpolant_at_pos =
+    [N](const double t_0, const double t_1,
+	const Eigen::VectorXd &state_0, const Eigen::VectorXd &state_1,
+	const Eigen::VectorXd &dt_state_0, const Eigen::VectorXd &dt_state_1,
+	const int a, const int b, const int c) {
+      const int idx = IDX_OF(N, a, b, c);
+      quintic_hermite<std::array<double, 2>>
+	interpolant(std::array<double, 2>({t_0, t_1}),
+		    std::array<double, 2>({state_0(idx), state_1(idx)}),
+		    std::array<double, 2>({dt_state_0(idx), dt_state_1(idx)}),
+		    std::array<double, 2>({dt_state_0(N*N*N + idx), dt_state_1(N*N*N + idx)}) );
+      return interpolant;
+    };
+
+
+  auto evolve_and_set_IC =
+    [N,L,m,copy_initializer,interpolant_at_pos](const Eigen::VectorXd &tau, double t, const double delta_t, Eigen::VectorXd &state_new)->void {
+      typedef KleinGordonEquation Equation;
+      typedef typename Equation::Workspace Workspace;
+      typedef typename Equation::State State;
+      
+      KGParam param = KGParam({N, L, m});
+      Workspace workspace(param, copy_initializer);
+      Equation eqn(workspace);
+      auto stepper = runge_kutta4<State, double, State, double>();
+
+      const double h = L / N;
+      const long long int state_size = workspace.state.size();
+
+      const double t_max = tau.maxCoeff();
+      const double t_min = tau.minCoeff();
+      std::cout << "t_max = " << t_max << '\n';
+      std::cout << "t_min = " << t_min << '\n';
+
+      Eigen::VectorXd state_last(state_size);
+      Eigen::VectorXd dt_state_last(state_size);
+      Eigen::VectorXd dt_state_cur(state_size);
+
+      // Initialization
+      state_last = workspace.state;
+      eqn(state_last, dt_state_last, t);
+
+      auto stop_condition = [t_max, t_min, delta_t](const double t)->bool {
+	if(delta_t > 0) {
+	  return t < t_max;
+	} else {
+	  return t > t_min;
+	}
+      };
+      
+      // TODO
+      while(stop_condition(t)) {
+	stepper.do_step(eqn, workspace.state, t, delta_t);
+	eqn(workspace.state, dt_state_cur, t);
+	
+	// Set new initial conditions by interpolation
+	for(int a = 0; a < N; ++a){
+	  for(int b = 0; b < N; ++b){
+	    for(int c = 0; c < N; ++c){
+	      const int idx = IDX_OF(N, a, b, c);
+	      const double t_eval = -theta(idx) / m;
+	      if(t_eval >= t && t_eval <= t + delta_t) {
+		auto center_interpolant = interpolant_at_pos(t, t + delta_t,
+							     state_buffer[0], state_buffer[1],
+							     dt_state_buffer[0], dt_state_buffer[1],
+							     a, b, c);
+	    
+		const double delta_varphi_x = interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], (a+1)%N, b, c)(t_eval) - interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], (a+N-1)%N, b, c)(t_eval);
+		const double delta_varphi_y = interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, (b+1)%N, c)(t_eval) - interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, (b+N-1)%N, c)(t_eval);
+		const double delta_varphi_z = interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, b, (c+1)%N)(t_eval) - interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, b, (c+N-1)%N)(t_eval);
+
+		const double delta_theta_x = theta(IDX_OF(N, (a+1)%N, b, c)) - theta(IDX_OF(N, (a+N-1)%N, b, c));
+		const double delta_theta_y = theta(IDX_OF(N, a, (b+1)%N, c)) - theta(IDX_OF(N, a, (b+N-1)%N, c));
+		const double delta_theta_z = theta(IDX_OF(N, a, b, (c+1)%N)) - theta(IDX_OF(N, a, b, (c+N-1)%N));
+	    
+		varphi_new(idx) = center_interpolant(t_eval);
+		dt_varphi_new(idx) = center_interpolant.prime(t_eval)
+		  - (delta_varphi_x * delta_theta_x + delta_varphi_y * delta_theta_y + delta_varphi_z * delta_theta_z) / (4 * h * h * m);
+	      } 
+	    }
+	  }
+	}
+
+	// Prepare for next time step
+	state_last = workspace.state;
+	dt_state_last.swap(dt_state_cur);
+	t += delta_t;
+      }
+
+    };
+
+  
+  KGParam param = KGParam({N, L, m});
+  Workspace workspace(param, empty_initializer);
+  Equation eqn(workspace);
+  auto stepper = runge_kutta4<State, double, State, double>();
+
+  const double delta_t = 0.01 / m;
+  const double t_max = - theta.minCoeff() / m;
+  const double t_min = - theta.maxCoeff() / m;
+
+
+  Eigen::VectorXd varphi_new(varphi.size());
+  Eigen::VectorXd dt_varphi_new(dt_varphi.size());
+
+  const long long int state_size = varphi.size() + dt_varphi.size();
+  std::deque<Eigen::VectorXd> state_buffer;
+  std::deque<Eigen::VectorXd> dt_state_buffer;
+  
+  // Solve the equation forward in time and set new initial conditions by interpolation
+  workspace.state = make_state(varphi, dt_varphi);
+  state_buffer.push_back(Eigen::VectorXd(workspace.state));
+  dt_state_buffer.push_back(Eigen::VectorXd(state_size));
+  eqn(state_buffer.back(), dt_state_buffer.back(), 0.0);
+
+  
+  double t = 0;
+  while(t < t_max) {
+    std::cout << "t = " << t << '\n';
+    stepper.do_step(eqn, workspace.state, 0.0, delta_t);
+    state_buffer.push_back(Eigen::VectorXd(workspace.state));
+    dt_state_buffer.push_back(Eigen::VectorXd(state_size));
+    eqn(state_buffer.back(), dt_state_buffer.back(), 0.0);
+
+    // Set new initial conditions by interpolation
+    for(int a = 0; a < N; ++a){
+      for(int b = 0; b < N; ++b){
+	for(int c = 0; c < N; ++c){
+	  const int idx = IDX_OF(N, a, b, c);
+	  const double t_eval = -theta(idx) / m;
+	  if(t_eval >= t && t_eval <= t + delta_t) {
+	    auto center_interpolant = interpolant_at_pos(t, t + delta_t,
+							 state_buffer[0], state_buffer[1],
+							 dt_state_buffer[0], dt_state_buffer[1],
+							 a, b, c);
+	    
+	    const double delta_varphi_x = interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], (a+1)%N, b, c)(t_eval) - interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], (a+N-1)%N, b, c)(t_eval);
+	    const double delta_varphi_y = interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, (b+1)%N, c)(t_eval) - interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, (b+N-1)%N, c)(t_eval);
+	    const double delta_varphi_z = interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, b, (c+1)%N)(t_eval) - interpolant_at_pos(t, t + delta_t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, b, (c+N-1)%N)(t_eval);
+
+	    const double delta_theta_x = theta(IDX_OF(N, (a+1)%N, b, c)) - theta(IDX_OF(N, (a+N-1)%N, b, c));
+	    const double delta_theta_y = theta(IDX_OF(N, a, (b+1)%N, c)) - theta(IDX_OF(N, a, (b+N-1)%N, c));
+	    const double delta_theta_z = theta(IDX_OF(N, a, b, (c+1)%N)) - theta(IDX_OF(N, a, b, (c+N-1)%N));
+	    
+	    varphi_new(idx) = center_interpolant(t_eval);
+	    dt_varphi_new(idx) = center_interpolant.prime(t_eval)
+	      - (delta_varphi_x * delta_theta_x + delta_varphi_y * delta_theta_y + delta_varphi_z * delta_theta_z) / (4 * h * h * m);
+	  } 
+	}
+      }
+    }
+    // Next time step
+    state_buffer.pop_front();
+    dt_state_buffer.pop_front();
+    t += delta_t;
+  }
+  state_buffer.clear();
+  dt_state_buffer.clear();
+  
+  std::cout << "point 2\n";
+  
+  // Solve the equation backward in time and set new initial conditions by interpolation
+  workspace.state = make_state(varphi, dt_varphi);
+  state_buffer.push_back(Eigen::VectorXd(workspace.state));
+  dt_state_buffer.push_back(Eigen::VectorXd(state_size));
+  eqn(state_buffer.back(), dt_state_buffer.back(), 0.0);
+  
+  t = 0;
+  while(t > t_min) {
+    std::cout << "t = " << t << '\n';
+    stepper.do_step(eqn, workspace.state, 0.0, -delta_t);
+    state_buffer.push_front(Eigen::VectorXd(workspace.state));
+    dt_state_buffer.push_front(Eigen::VectorXd(state_size));
+    eqn(state_buffer.front(), dt_state_buffer.front(), 0.0);
+
+    // Set new initial conditions by interpolation
+    for(int a = 0; a < N; ++a){
+      for(int b = 0; b < N; ++b){
+	for(int c = 0; c < N; ++c){
+	  const int idx = IDX_OF(N, a, b, c);
+	  const double t_eval = -theta(idx) / m;
+	  if(t_eval >= t - delta_t && t_eval <= t) {
+	    auto center_interpolant = interpolant_at_pos(t - delta_t, t,
+							 state_buffer[0], state_buffer[1],
+							 dt_state_buffer[0], dt_state_buffer[1],
+							 a, b, c);
+	    
+	    const double delta_varphi_x = interpolant_at_pos(t - delta_t, t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], (a+1)%N, b, c)(t_eval) - interpolant_at_pos(t - delta_t, t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], (a+N-1)%N, b, c)(t_eval);
+	    const double delta_varphi_y = interpolant_at_pos(t - delta_t, t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, (b+1)%N, c)(t_eval) - interpolant_at_pos(t - delta_t, t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, (b+N-1)%N, c)(t_eval);
+	    const double delta_varphi_z = interpolant_at_pos(t - delta_t, t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, b, (c+1)%N)(t_eval) - interpolant_at_pos(t - delta_t, t, state_buffer[0], state_buffer[1], dt_state_buffer[0], dt_state_buffer[1], a, b, (c+N-1)%N)(t_eval);
+
+	    const double delta_theta_x = theta(IDX_OF(N, (a+1)%N, b, c)) - theta(IDX_OF(N, (a+N-1)%N, b, c));
+	    const double delta_theta_y = theta(IDX_OF(N, a, (b+1)%N, c)) - theta(IDX_OF(N, a, (b+N-1)%N, c));
+	    const double delta_theta_z = theta(IDX_OF(N, a, b, (c+1)%N)) - theta(IDX_OF(N, a, b, (c+N-1)%N));
+	    
+	    varphi_new(idx) = center_interpolant(t_eval);
+	    dt_varphi_new(idx) = center_interpolant.prime(t_eval)
+	      - (delta_varphi_x * delta_theta_x + delta_varphi_y * delta_theta_y + delta_varphi_z * delta_theta_z) / (4 * h * h * m);
+	  } 
+	}
+      }
+    }
+    // Next time step
+    state_buffer.pop_back();
+    dt_state_buffer.pop_back();
+    t -= delta_t;
+  }
+  state_buffer.clear();
+  dt_state_buffer.clear();
+
+  
+  // Save initial conditions
+  varphi = varphi_new;
+  dt_varphi = dt_varphi_new;
+}
