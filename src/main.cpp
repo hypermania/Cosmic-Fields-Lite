@@ -101,7 +101,7 @@ void generate_ic(void)
       .m = 1.0, // Mass of scalar field
       .lambda = 0, // Lambda phi^4 coupling strength
       //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
-      .k_ast = 2.0, // Characteristic momentum
+      .k_ast = 5.0, // Characteristic momentum
       .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
       .varphi_std_dev = 1.0, // Standard deviation of field
       .Psi_std_dev = 0.2, // Standard deviation of metric perturbation Psi

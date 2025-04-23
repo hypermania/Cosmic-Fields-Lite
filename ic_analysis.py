@@ -157,7 +157,7 @@ def filter_3d(f, max_s):
 
 q_averaged_filtered = [filter_k(q, 5) for q in q_averaged]
 
-q_filtered = [filter_3d(q, 5) for q in q_xyz]
+q_filtered = [filter_3d(q, 10) for q in q_xyz]
 
 # Font Settings
 font_path = font_manager.findfont("Latin Modern Roman")
@@ -182,6 +182,8 @@ cmbDict = {
 cmbColor = matplotlib.colors.LinearSegmentedColormap("cmb", cmbDict)
 colorNorm = matplotlib.colors.TwoSlopeNorm(0, vmin=-0.5, vmax=1.0)
 
+whiteColor = matplotlib.colors.ListedColormap([(1,1,1)])
+
 
 
 # Plotting
@@ -195,11 +197,13 @@ slice_ticks = np.array([0, 5, 10, 15])
 slice_labels = list(map(lambda x: '$' + str(x) + '$', slice_ticks))
 
 
+
+
 # Function to plot one snapshot
 def plot_slice(ax, grid, time=None):
-    cax = ax.imshow(grid, cmap=cmbColor, norm=colorNorm, aspect='equal', origin='lower')
+    cax = ax.imshow(grid, cmap=cmbColor, norm=colorNorm, aspect='equal', origin='lower', extent=(0,param['L'],0,param['L']))
     ax.tick_params(axis="both",which="both",bottom=True,top=False,left=False,right=False,labelbottom=True,labeltop=False,labelleft=False,labelright=False,direction='in',length=2.0,width=0.5,reset=True)
-    ax.set_xticks(slice_ticks / (param['L'] / param['N']))
+    ax.set_xticks(slice_ticks) # / (param['L'] / param['N']))
     ax.set_xticklabels(slice_labels)
     for label in ax.get_xticklabels():
         label.set_fontproperties(font)
@@ -209,22 +213,54 @@ def plot_slice(ax, grid, time=None):
     
 
 
+# matplotlib.rcParams['axes.linewidth'] = 0.5
 
-fig = plt.figure(figsize=(2,2))
-#gs = fig.add_gridspec(1, 1, width_ratios=[1, 1], wspace=0, hspace=0)
+#fig = plt.figure(figsize=(2,2))
+# fig, axs = plt.subplots(ncols=2, nrows=1, figsize=(4.1,2), sharey='all', layout='tight')
+# ax = plt.axes()
 
-#ax = fig.add_subplot(gs[0, 0])
-ax = plt.axes()
 
-#x = np.linspace(0, param["L"] - param["L"] / param["N"], param["N"])
-x = np.linspace(0, param["N"] - 1, param["N"])
+
+fig = plt.figure(figsize=(4.1,2))
+gs = fig.add_gridspec(1, 2, width_ratios=[1, 1.05], wspace=0, hspace=0)
+
+
+
+ax = fig.add_subplot(gs[0, 0])
+#x = np.linspace(0, param["N"] - 1, param["N"])
+x = np.linspace(0, param["L"] - param["L"] / param["N"], param["N"])
 X, Y = np.meshgrid(x, x, indexing='ij')
-# v = np.zeros(q_averaged_filtered[1].shape)
-# u = Y / 384. #np.ones(q_averaged_filtered[1].shape)
-u = q_averaged_filtered[1]
-v = q_averaged_filtered[2]
-# u = q_averaged[1]
-# v = q_averaged[2]
+u = np.zeros(q_averaged[1].shape)
+# v = -np.sin(2 * np.pi * Y / 384.)
+v = -np.sin(2 * np.pi * Y / param["L"])
+
+# ax.imshow(np.zeros(X.shape), cmap=whiteColor, norm=colorNorm, aspect='equal', origin='lower')
+
+spacing = 8
+X = X[(spacing//2)::spacing, (spacing//2)::spacing]
+Y = Y[(spacing//2)::spacing, (spacing//2)::spacing]
+u = u[(spacing//2)::spacing, (spacing//2)::spacing]
+v = v[(spacing//2)::spacing, (spacing//2)::spacing]
+qv2 = ax.quiver(X, Y, u, v, angles='xy', pivot='mid', scale=25., scale_units='inches')
+plt.quiverkey(qv2, -0.1, 0.9, 1, r'$\vec{v}$', coordinates='axes', labelpos='N')
+ax.tick_params(axis="both",which="both",bottom=True,top=False,left=True,right=False,labelbottom=True,labeltop=False,labelleft=True,labelright=False,direction='in',length=2.0,width=0.5,reset=True)
+ax.set_xlim(0, param["L"])
+ax.set_ylim(0, param["L"])
+ax.set_xlabel(r'$mx$',fontsize=15)
+ax.set_ylabel(r'$my$',fontsize=15)
+ax.set_xticks(slice_ticks)
+ax.set_yticks(slice_ticks)
+
+
+ax = fig.add_subplot(gs[0, 1])
+
+x = np.linspace(0, param["L"] - param["L"] / param["N"], param["N"])
+#x = np.linspace(0, param["N"] - 1, param["N"])
+X, Y = np.meshgrid(x, x, indexing='ij')
+# u = q_averaged_filtered[1]
+# v = q_averaged_filtered[2]
+u = q_averaged[1]
+v = q_averaged[2]
 # u = q_xyz[1][0]
 # v = q_xyz[2][0]
 
@@ -235,28 +271,20 @@ Y = Y[(spacing//2)::spacing, (spacing//2)::spacing]
 u = u[(spacing//2)::spacing, (spacing//2)::spacing]
 v = v[(spacing//2)::spacing, (spacing//2)::spacing]
 
+ax.quiver(X, Y, u, v, angles='xy', pivot='mid')
+
 #to_show = dt_varphi_grid[0] / 5
-to_show = filter_k(delta_averaged, 2)
-ax.quiver(X, Y, u, v)
-plot_slice(ax, to_show.transpose() )
+#to_show = filter_k(delta_averaged, 3)
+to_show = delta_averaged
+plot_slice(ax, to_show.transpose())
+
+ax.set_xlim(0, param["L"])
+ax.set_ylim(0, param["L"])
+
 
 #plt.show()
-plt.savefig('temp_figure.pdf', bbox_inches='tight', dpi=1000)
-
-
-
-
-# q_filtered = [filter_3d(q, 30) for q in q_xyz]
-
-
-# fig = plt.figure(figsize=(2,2))
-# ax = plt.axes()
-# x = np.linspace(0, param["N"] - 1, param["N"])
-# to_plot = q_filtered[2].mean(axis=0).mean(axis=0)
-# ax.plot(x, to_plot)
-# plt.savefig('temp_figure.pdf', bbox_inches='tight', dpi=1000)
-
-
+plt.savefig('temp_figure.pdf', bbox_inches='tight', dpi=500)
+plt.clf()
 
 
 
