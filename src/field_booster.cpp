@@ -243,20 +243,21 @@ void scan_and_set_with_klein_gordon(const long long int N, const double L, const
     // Set new initial conditions by interpolation
     const double t0 = std::min(t, t + delta_t);
     const double t1 = std::max(t, t + delta_t);
+    const Eigen::VectorXd &state0 = (delta_t > 0) ? state_last : state_cur;
+    const Eigen::VectorXd &state1 = (delta_t > 0) ? state_cur : state_last;
+    const Eigen::VectorXd &dt_state0 = (delta_t > 0) ? dt_state_last : dt_state_cur;
+    const Eigen::VectorXd &dt_state1 = (delta_t > 0) ? dt_state_cur : dt_state_last;
     for(int a = 0; a < N; ++a){
       for(int b = 0; b < N; ++b){
 	for(int c = 0; c < N; ++c){
 	  const int idx = IDX_OF(N, a, b, c);
 	  const double t_eval = tau(idx);
 	  if(t0 <= t_eval && t_eval <= t1) {
-	    auto center_interpolant = interpolant_at_pos(t0, t1,
-							 state_last, state_cur,
-							 dt_state_last, dt_state_cur,
-							 a, b, c);
+	    auto center_interpolant = interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, a, b, c);
 	    
-	    const double delta_varphi_x = interpolant_at_pos(t0, t1, state_last, state_cur, dt_state_last, dt_state_cur, (a+1)%N, b, c)(t_eval) - interpolant_at_pos(t0, t1, state_last, state_cur, dt_state_last, dt_state_cur, (a+N-1)%N, b, c)(t_eval);
-	    const double delta_varphi_y = interpolant_at_pos(t0, t1, state_last, state_cur, dt_state_last, dt_state_cur, a, (b+1)%N, c)(t_eval) - interpolant_at_pos(t0, t1, state_last, state_cur, dt_state_last, dt_state_cur, a, (b+N-1)%N, c)(t_eval);
-	    const double delta_varphi_z = interpolant_at_pos(t0, t1, state_last, state_cur, dt_state_last, dt_state_cur, a, b, (c+1)%N)(t_eval) - interpolant_at_pos(t0, t1, state_last, state_cur, dt_state_last, dt_state_cur, a, b, (c+N-1)%N)(t_eval);
+	    const double delta_varphi_x = interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, (a+1)%N, b, c)(t_eval) - interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, (a+N-1)%N, b, c)(t_eval);
+	    const double delta_varphi_y = interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, a, (b+1)%N, c)(t_eval) - interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, a, (b+N-1)%N, c)(t_eval);
+	    const double delta_varphi_z = interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, a, b, (c+1)%N)(t_eval) - interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, a, b, (c+N-1)%N)(t_eval);
 
 	    const double delta_tau_x = tau(IDX_OF(N, (a+1)%N, b, c)) - tau(IDX_OF(N, (a+N-1)%N, b, c));
 	    const double delta_tau_y = tau(IDX_OF(N, a, (b+1)%N, c)) - tau(IDX_OF(N, a, (b+N-1)%N, c));
@@ -287,7 +288,7 @@ Eigen::VectorXd boost_klein_gordon_field(const long long int N, const double L, 
   return state_new;
 }
 
-void boost_proca_field(const long long int N, const double L, const double m, const Eigen::VectorXd &tau, const Eigen::VectorXd &state_init, double t, const double delta_t, Eigen::VectorXd &state_new)
+void boost_proca_field(const long long int N, const double L, const double m, const Eigen::VectorXd &tau, const Eigen::VectorXd &state_init, const double abs_delta_t)
 {
   return;
 }

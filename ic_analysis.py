@@ -80,19 +80,6 @@ class PlottingUtils:
 
 
 
-# Load data
-project_dir = "output/scalar_IC/"
-param = load_params(project_dir)
-utils = PlottingUtils(param)
-
-varphi = np.fromfile(project_dir + r"varphi.dat", dtype=np.float64)
-dt_varphi = np.fromfile(project_dir + r"dt_varphi.dat", dtype=np.float64)
-
-varphi_grid = varphi.reshape((param["N"], param["N"], param["N"]))
-dt_varphi_grid = dt_varphi.reshape((param["N"], param["N"], param["N"]))
-
-
-
 def compute_gradient(grid):
     delta_x = param["L"] / param["N"]
     
@@ -113,22 +100,9 @@ def compute_gradient(grid):
     
     return [dx_grid, dy_grid, dz_grid]
 
+    
 
-dxyz_varphi = compute_gradient(varphi_grid)
-dyz_varphi_averaged = [f.mean(axis=0) for f in dxyz_varphi]
-
-q_xyz = [-di_varphi * dt_varphi_grid for di_varphi in dxyz_varphi]
-q_averaged = [f.mean(axis=0) for f in q_xyz]
-
-rho = 0.5 * dt_varphi_grid * dt_varphi_grid + 0.5 * sum([f * f for f in dxyz_varphi]) + 0.5 * varphi_grid * varphi_grid
-rho_mean = rho.mean()
-rho_averaged = rho.mean(axis=0)
-delta = (rho / rho_mean) - 1.0
-delta_averaged = delta.mean(axis=0)
-dt_varphi_averaged = dt_varphi_grid.mean(axis=0)
-
-
-def filter_k(array2d, max_s):
+def filter_2d(array2d, max_s):
     q_fft_2 = fft.rfft2(array2d)
     for a in range(param["N"]):
         for b in range(param["N"]//2+1):
@@ -155,9 +129,62 @@ def filter_3d(f, max_s):
     return fft.irfftn(f_fft)
 
 
-q_averaged_filtered = [filter_k(q, 5) for q in q_averaged]
+def compute_negative_gradient_averaged(tau_filename:str):
+    tau = np.fromfile(tau_filename, dtype=np.float64).reshape((param["N"], param["N"], param["N"]))
+    gradients = compute_gradient(tau)
+    return [-f.mean(axis=0) for f in gradients]
 
-q_filtered = [filter_3d(q, 10) for q in q_xyz]
+
+def compute_delta_averaged(rho_filename:str):
+    rho = np.fromfile(rho_filename, dtype=np.float64).reshape((param["N"], param["N"], param["N"]))
+    rho_mean = rho.mean()
+    delta = (rho / rho_mean) - 1.0
+    return delta.mean(axis=0)
+
+
+def compute_momentum_averaged(varphi_filename:str, dt_varphi_filename:str):
+    varphi = np.fromfile(varphi_filename, dtype=np.float64).reshape((param["N"], param["N"], param["N"]))
+    dt_varphi = np.fromfile(dt_varphi_filename, dtype=np.float64).reshape((param["N"], param["N"], param["N"]))
+    dxyz_varphi = compute_gradient(varphi)
+    q_xyz = [-di_varphi * dt_varphi for di_varphi in dxyz_varphi]
+    return [f.mean(axis=0) for f in q_xyz]
+
+# Load data
+project_dir = "output/scalar_IC/"
+param = load_params(project_dir)
+utils = PlottingUtils(param)
+
+# varphi = np.fromfile(project_dir + r"varphi.dat", dtype=np.float64).reshape((param["N"], param["N"], param["N"]))
+# dt_varphi = np.fromfile(project_dir + r"dt_varphi.dat", dtype=np.float64).reshape((param["N"], param["N"], param["N"]))
+
+
+# dxyz_varphi = compute_gradient(varphi)
+# dyz_varphi_averaged = [f.mean(axis=0) for f in dxyz_varphi]
+
+# q_xyz = [-di_varphi * dt_varphi for di_varphi in dxyz_varphi]
+# q_averaged = [f.mean(axis=0) for f in q_xyz]
+
+
+# rho = np.fromfile(project_dir + r"rho.dat", dtype=np.float64).reshape((param["N"], param["N"], param["N"]))
+# rho_mean = rho.mean()
+# rho_averaged = rho.mean(axis=0)
+# delta = (rho / rho_mean) - 1.0
+# delta_averaged = delta.mean(axis=0)
+
+
+v_averaged = compute_negative_gradient_averaged(project_dir + r"tau.dat")
+
+delta_averaged = compute_delta_averaged(project_dir + r"rho.dat")
+q_averaged = compute_momentum_averaged(project_dir + r"varphi.dat", project_dir + r"dt_varphi.dat")
+
+delta_averaged_old = compute_delta_averaged(project_dir + r"rho_old.dat")
+q_averaged_old = compute_momentum_averaged(project_dir + r"varphi_old.dat", project_dir + r"dt_varphi_old.dat")
+
+import gc
+gc.collect()
+
+#q_averaged_filtered = [filter_k(q, 5) for q in q_averaged]
+#q_filtered = [filter_3d(q, 10) for q in q_xyz]
 
 # Font Settings
 font_path = font_manager.findfont("Latin Modern Roman")
@@ -187,12 +214,6 @@ whiteColor = matplotlib.colors.ListedColormap([(1,1,1)])
 
 
 # Plotting
-x_bounds = [1.0e-2, 4]
-y_bounds = [1e-4, 1e1]
-log_aspect_ratio = log(y_bounds[1]/y_bounds[0]) / log(x_bounds[1]/x_bounds[0])
-
-mt_text_pos = [1.5e-2, 2]
-
 slice_ticks = np.array([0, 5, 10, 15])
 slice_labels = list(map(lambda x: '$' + str(x) + '$', slice_ticks))
 
@@ -200,7 +221,7 @@ slice_labels = list(map(lambda x: '$' + str(x) + '$', slice_ticks))
 
 
 # Function to plot one snapshot
-def plot_slice(ax, grid, time=None):
+def plot_slice(ax, grid, time=None, show_colorbar=True):
     cax = ax.imshow(grid, cmap=cmbColor, norm=colorNorm, aspect='equal', origin='lower', extent=(0,param['L'],0,param['L']))
     ax.tick_params(axis="both",which="both",bottom=True,top=False,left=False,right=False,labelbottom=True,labeltop=False,labelleft=False,labelright=False,direction='in',length=2.0,width=0.5,reset=True)
     ax.set_xticks(slice_ticks) # / (param['L'] / param['N']))
@@ -208,41 +229,38 @@ def plot_slice(ax, grid, time=None):
     for label in ax.get_xticklabels():
         label.set_fontproperties(font)
     ax.set_xlabel(r'$mx$',fontsize=15)
-    cax_colorbar = make_axes_locatable(ax).append_axes("right", size="5%", pad=0)
-    cbar = ax.figure.colorbar(cax, cax=cax_colorbar, ax=ax)
+    if show_colorbar:
+        cax_colorbar = make_axes_locatable(ax).append_axes("right", size="5%", pad=0)
+        cbar = ax.figure.colorbar(cax, cax=cax_colorbar, ax=ax)
     
 
 
 # matplotlib.rcParams['axes.linewidth'] = 0.5
 
-#fig = plt.figure(figsize=(2,2))
-# fig, axs = plt.subplots(ncols=2, nrows=1, figsize=(4.1,2), sharey='all', layout='tight')
-# ax = plt.axes()
+spacing = 8
+quiver_scale = 2
+
+# Plot a row
+fig = plt.figure(figsize=(6.1,2))
+gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1.05], wspace=0, hspace=0)
 
 
-
-fig = plt.figure(figsize=(4.1,2))
-gs = fig.add_gridspec(1, 2, width_ratios=[1, 1.05], wspace=0, hspace=0)
-
-
-
+# Plot 1: velocity field
 ax = fig.add_subplot(gs[0, 0])
-#x = np.linspace(0, param["N"] - 1, param["N"])
 x = np.linspace(0, param["L"] - param["L"] / param["N"], param["N"])
 X, Y = np.meshgrid(x, x, indexing='ij')
-u = np.zeros(q_averaged[1].shape)
-# v = -np.sin(2 * np.pi * Y / 384.)
-v = -np.sin(2 * np.pi * Y / param["L"])
+# u = np.zeros(q_averaged[1].shape)
+# v = -np.sin(2 * np.pi * Y / param["L"])
+u = v_averaged[1]
+v = v_averaged[2]
 
-# ax.imshow(np.zeros(X.shape), cmap=whiteColor, norm=colorNorm, aspect='equal', origin='lower')
 
-spacing = 8
 X = X[(spacing//2)::spacing, (spacing//2)::spacing]
 Y = Y[(spacing//2)::spacing, (spacing//2)::spacing]
 u = u[(spacing//2)::spacing, (spacing//2)::spacing]
 v = v[(spacing//2)::spacing, (spacing//2)::spacing]
-qv2 = ax.quiver(X, Y, u, v, angles='xy', pivot='mid', scale=25., scale_units='inches')
-plt.quiverkey(qv2, -0.1, 0.9, 1, r'$\vec{v}$', coordinates='axes', labelpos='N')
+qv2 = ax.quiver(X, Y, u, v, angles='xy', pivot='mid', scale=1e-1, scale_units='dots')
+#plt.quiverkey(qv2, -0.1, 0.9, 1, r'$\vec{v}$', coordinates='axes', labelpos='N')
 ax.tick_params(axis="both",which="both",bottom=True,top=False,left=True,right=False,labelbottom=True,labeltop=False,labelleft=True,labelright=False,direction='in',length=2.0,width=0.5,reset=True)
 ax.set_xlim(0, param["L"])
 ax.set_ylim(0, param["L"])
@@ -250,45 +268,83 @@ ax.set_xlabel(r'$mx$',fontsize=15)
 ax.set_ylabel(r'$my$',fontsize=15)
 ax.set_xticks(slice_ticks)
 ax.set_yticks(slice_ticks)
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['font.serif'] = 'Times New Roman'
+#font_properties = {'family': 'Times New Roman', 'size': 15}
+ax.set_title(r'velocity field', fontsize=15)
+             #fontdict=font_properties)
+ #            $fontsize=15, fontproperties=font)
+ #fontfamily='latin')
 
 
+# Plot 2: before boost
 ax = fig.add_subplot(gs[0, 1])
 
+
 x = np.linspace(0, param["L"] - param["L"] / param["N"], param["N"])
-#x = np.linspace(0, param["N"] - 1, param["N"])
 X, Y = np.meshgrid(x, x, indexing='ij')
-# u = q_averaged_filtered[1]
-# v = q_averaged_filtered[2]
-u = q_averaged[1]
-v = q_averaged[2]
-# u = q_xyz[1][0]
-# v = q_xyz[2][0]
+u = q_averaged_old[1]
+v = q_averaged_old[2]
 
-
-spacing = 8
 X = X[(spacing//2)::spacing, (spacing//2)::spacing]
 Y = Y[(spacing//2)::spacing, (spacing//2)::spacing]
 u = u[(spacing//2)::spacing, (spacing//2)::spacing]
 v = v[(spacing//2)::spacing, (spacing//2)::spacing]
 
-ax.quiver(X, Y, u, v, angles='xy', pivot='mid')
+#ax.quiver(X, Y, u, v, angles='xy', pivot='mid')
+ax.quiver(X, Y, u, v, angles='xy', pivot='mid', scale=quiver_scale, scale_units='dots')
 
-#to_show = dt_varphi_grid[0] / 5
+to_show = delta_averaged_old
+plot_slice(ax, to_show.transpose(), show_colorbar=False)
+
+ax.set_xlim(0, param["L"])
+ax.set_ylim(0, param["L"])
+ax.set_title(r'before boost', fontsize=15)
+
+
+# Plot 3: after boost
+ax = fig.add_subplot(gs[0, 2])
+
+x = np.linspace(0, param["L"] - param["L"] / param["N"], param["N"])
+X, Y = np.meshgrid(x, x, indexing='ij')
+u = q_averaged[1]
+v = q_averaged[2]
+# u = q_xyz[1][0]
+# v = q_xyz[2][0]
+# u = q_averaged_filtered[1]
+# v = q_averaged_filtered[2]
+
+X = X[(spacing//2)::spacing, (spacing//2)::spacing]
+Y = Y[(spacing//2)::spacing, (spacing//2)::spacing]
+u = u[(spacing//2)::spacing, (spacing//2)::spacing]
+v = v[(spacing//2)::spacing, (spacing//2)::spacing]
+
+qv = ax.quiver(X, Y, u, v, angles='xy', pivot='mid', scale=quiver_scale, scale_units='dots')
+ax.quiverkey(qv, 1.0, -0.1, 1e1, r'$|\vec{q}| / m^4 = 10$', coordinates='axes', labelpos='S', labelsep=0.05, fontproperties={'size':5})
+
 #to_show = filter_k(delta_averaged, 3)
 to_show = delta_averaged
 plot_slice(ax, to_show.transpose())
 
 ax.set_xlim(0, param["L"])
 ax.set_ylim(0, param["L"])
+ax.set_title(r'after boost', fontsize=15)
 
 
-#plt.show()
+# Assemble
 plt.savefig('temp_figure.pdf', bbox_inches='tight', dpi=500)
 plt.clf()
 
 
 
 
+
+
+x_bounds = [1.0e-1, 60]
+y_bounds = [1e-4, 1e0]
+log_aspect_ratio = log(y_bounds[1]/y_bounds[0]) / log(x_bounds[1]/x_bounds[0])
+
+mt_text_pos = [1.5e-2, 2]
 
 
 # Function to plot one spectrum
@@ -308,5 +364,42 @@ def plot_spectrum(ax, power_spectrum, initial_power_spectrum=None, time=None):
         
     ax.set_ylabel(r'$\Delta_\delta^2(t,k)$',fontsize=15)
     
-    ax.text(*mt_text_pos,r'$mt={:.0f}$'.format(param['m'] * time),fontsize=10,color='0')
+    # ax.text(*mt_text_pos,r'$mt={:.0f}$'.format(param['m'] * time),fontsize=10,color='0')
 
+
+fig = plt.figure(figsize=(6.1,2))
+gs = fig.add_gridspec(1, 1, width_ratios=[1], wspace=0, hspace=0)
+
+ax = fig.add_subplot(gs[0, 0])
+
+rho_spectrum_old = np.fromfile(project_dir + "rho_spectrum_old.dat", dtype=np.float64)
+delta_spectrum_old = rho_spectrum_old / (rho_spectrum_old[0] / pow(param['N'], 6))
+power_spectrum_old = utils.compute_power_spectrum(delta_spectrum_old)
+
+rho_spectrum = np.fromfile(project_dir + "rho_spectrum.dat", dtype=np.float64)
+delta_spectrum = rho_spectrum / (rho_spectrum[0] / pow(param['N'], 6))
+power_spectrum = utils.compute_power_spectrum(delta_spectrum)
+
+# ax.loglog(*power_spectrum, linewidth=1.5, color='tab:orange')
+# ax.set_xlim(*x_bounds)
+# ax.set_ylim(*y_bounds)
+
+plot_spectrum(ax, power_spectrum, initial_power_spectrum=power_spectrum_old)
+
+plt.savefig('spectrum_temp_figure.pdf', bbox_inches='tight', dpi=500)
+plt.clf()
+
+
+varphi_spectrum = np.fromfile(project_dir + "varphi_spectrum.dat", dtype=np.float64)
+varphi_power_spectrum = utils.compute_power_spectrum(varphi_spectrum)
+varphi_spectrum_old = np.fromfile(project_dir + "varphi_spectrum_old.dat", dtype=np.float64)
+varphi_power_spectrum_old = utils.compute_power_spectrum(varphi_spectrum_old)
+
+fig = plt.figure(figsize=(6.1,2))
+gs = fig.add_gridspec(1, 1, width_ratios=[1], wspace=0, hspace=0)
+ax = fig.add_subplot(gs[0, 0])
+# ax.set_xlim(*x_bounds)
+plot_spectrum(ax, varphi_power_spectrum, initial_power_spectrum=varphi_power_spectrum_old)
+ax.set_ylim([1e-3,1e1])
+plt.savefig('spectrum_temp_figure.pdf', bbox_inches='tight', dpi=500)
+plt.clf()

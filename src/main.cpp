@@ -136,9 +136,46 @@ void generate_ic(void)
   for(int a = 0; a < N; ++a){
     for(int b = 0; b < N; ++b){
       for(int c = 0; c < N; ++c){
-	tau(IDX_OF(N, a, b, c)) = 0.5 * cos(2 * std::numbers::pi * c / N);
+	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * std::numbers::pi * c / N);
       }
     }
+  }
+
+
+  Workspace workspace(param, unperturbed_grf);
+
+  Eigen::VectorXd state_new = boost_klein_gordon_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
+
+
+  
+  write_to_file(tau, dir + "tau.dat");
+  {
+    Eigen::VectorXd varphi = state_new.head(N*N*N);
+    Eigen::VectorXd dt_varphi = state_new.tail(N*N*N);
+    write_to_file(varphi, dir + "varphi.dat");
+    write_to_file(dt_varphi, dir + "dt_varphi.dat");
+  }
+
+  {
+    Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
+    Eigen::VectorXd dt_varphi_old = workspace.state.tail(N*N*N);
+    write_to_file(varphi_old, dir + "varphi_old.dat");
+    write_to_file(dt_varphi_old, dir + "dt_varphi_old.dat");
+  }
+
+  {
+    Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
+    write_to_file(compute_mode_power_spectrum(N, param.L, param.m, 1.0, workspace.state, workspace.fft_wrapper), dir + "varphi_spectrum_old.dat");
+    write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum_old.dat");
+    write_to_file(rho_old, dir + "rho_old.dat");
+  }
+
+  {
+    workspace.state = state_new;
+    Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
+    write_to_file(compute_mode_power_spectrum(N, param.L, param.m, 1.0, workspace.state, workspace.fft_wrapper), dir + "varphi_spectrum.dat");
+    write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum.dat");
+    write_to_file(rho_old, dir + "rho.dat");
   }
 
   // Eigen::VectorXd varphi;
@@ -149,12 +186,6 @@ void generate_ic(void)
   //   varphi = workspace.state.head(field_size);
   //   dt_varphi = workspace.state.tail(field_size);
   // }
-
-  Workspace workspace(param, unperturbed_grf);
-
-  Eigen::VectorXd state_new = boost_klein_gordon_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
-  Eigen::VectorXd varphi = state_new.head(N*N*N);
-  Eigen::VectorXd dt_varphi = state_new.tail(N*N*N);
   
   // Eigen::VectorXd varphi(N*N*N);
   // Eigen::VectorXd dt_varphi(N*N*N);
@@ -168,10 +199,6 @@ void generate_ic(void)
   //   }
   // }
 
-  {
-    write_VectorXd_to_file(varphi, dir + "varphi.dat");
-    write_VectorXd_to_file(dt_varphi, dir + "dt_varphi.dat");
-  }
 }
 
 void solve_field_equation(void)
@@ -265,10 +292,10 @@ void solve_field_equation(void)
 
     std::cout << "Psi_std_dev = " << sqrt(Psi.squaredNorm() / pow(param.N, 3)) << '\n';
     auto Psi_spectrum = compute_power_spectrum(param.N, Psi, fft_wrapper);
-    write_VectorXd_to_file(Psi_spectrum, dir + "initial_Psi_spectrum.dat");
+    write_to_file(Psi_spectrum, dir + "initial_Psi_spectrum.dat");
     
     auto R_spectrum = compute_power_spectrum(param.N, R, fft_wrapper);
-    write_VectorXd_to_file(R_spectrum, dir + "initial_R_spectrum.dat");
+    write_to_file(R_spectrum, dir + "initial_R_spectrum.dat");
   }
 
   
@@ -286,7 +313,7 @@ void solve_field_equation(void)
   {
     Eigen::VectorXd state_out(workspace.state.size());
     copy_vector(state_out, workspace.state);
-    write_VectorXd_to_file(state_out, dir + "state.dat");
+    write_to_file(state_out, dir + "state.dat");
   }
 }
 
@@ -353,20 +380,20 @@ void generate_wkb_solutions(void)
     {
       auto rho = Equation::compute_energy_density(workspace, t_eval);
       auto rho_spectrum = compute_power_spectrum(param.N, rho, workspace.fft_wrapper);
-      write_VectorXd_to_filename_template(rho_spectrum, dir + "wkb_rho_spectrum_%d.dat", i);
+      write_to_filename_template(rho_spectrum, dir + "wkb_rho_spectrum_%d.dat", i);
       
       Eigen::VectorXd rho_slice = rho.head(N*N); // The density for a = 0 slice.
       Eigen::VectorXd rho_axis_average = rho.reshaped(N*N, N).rowwise().mean(); // The density overaged over a axis.
-      write_VectorXd_to_filename_template(rho_slice, dir + "wkb_rho_slice_%d.dat", i);
-      write_VectorXd_to_filename_template(rho_axis_average, dir + "wkb_rho_axis_average_%d.dat", i);
+      write_to_filename_template(rho_slice, dir + "wkb_rho_slice_%d.dat", i);
+      write_to_filename_template(rho_axis_average, dir + "wkb_rho_axis_average_%d.dat", i);
     }
     {
       auto varphi_plus_spectrum = compute_mode_power_spectrum(N, param.L, param.m, workspace.cosmology.a(t_eval), workspace.state, workspace.fft_wrapper);
-      write_VectorXd_to_filename_template(varphi_plus_spectrum, dir + "wkb_varphi_plus_spectrum_%d.dat", i);
+      write_to_filename_template(varphi_plus_spectrum, dir + "wkb_varphi_plus_spectrum_%d.dat", i);
     }
   }
 
-  write_VectorXd_to_file(times, dir + "wkb_t_list.dat");
+  write_to_file(times, dir + "wkb_t_list.dat");
 
 }
 
