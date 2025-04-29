@@ -68,6 +68,62 @@ KleinGordonEquation::Vector KleinGordonEquation::compute_energy_density(const Wo
   return rho;
 }
 
+KleinGordonEquation::Vector KleinGordonEquation::compute_momentum_density(const Workspace &workspace, const double t)
+{
+  using namespace Eigen;
+  const long long int N = workspace.N;
+  const double L = workspace.L;
+  const double m = workspace.m;
+  //  const double inv_h_sqr = 1.0 / ((L / N) * (L / N));
+  const double inv_two_h = 1.0 / (2.0 * L / N);
+  const long long int field_size = N * N * N;
+  
+  VectorXd q(3 * field_size);
+  auto &varphi = workspace.state.head(field_size);
+  auto &dt_varphi = workspace.state.tail(field_size);
+  // auto &q_x = q.head(field_size);
+  // auto &q_y = q.segment(field_size, field_size);
+  // auto &q_z = q.tail(field_size);
+  
+  for(long long int a = 0; a < N; ++a){
+    for(long long int b = 0; b < N; ++b){
+      q(seqN(IDX_OF(N, a, b, 0), N)) = - dt_varphi(seqN(IDX_OF(N, a, b, 0), N)) * inv_two_h
+	* ( varphi(seqN(IDX_OF(N, (a+1)%N, b, 0), N)) - varphi(seqN(IDX_OF(N, (a+N-1)%N, b, 0), N)) );
+
+      q(seqN(field_size + IDX_OF(N, a, b, 0), N)) = - dt_varphi(seqN(IDX_OF(N, a, b, 0), N)) * inv_two_h
+	* ( varphi(seqN(IDX_OF(N, a, (b+1)%N, 0), N)) - varphi(seqN(IDX_OF(N, a, (b+N-1)%N, 0), N)) );
+
+      q(seqN(2*field_size + IDX_OF(N, a, b, 1), N-2)) = - dt_varphi(seqN(IDX_OF(N, a, b, 1), N-2)) * inv_two_h
+	* ( varphi(seqN(IDX_OF(N, a, b, 2), N-2)) - varphi(seqN(IDX_OF(N, a, b, 0), N-2)) );
+
+      q(2*field_size + IDX_OF(N, a, b, 0)) = - dt_varphi(IDX_OF(N, a, b, 0)) * inv_two_h
+	* ( varphi(IDX_OF(N, a, b, 1)) - varphi(IDX_OF(N, a, b, N-1)) );
+
+      q(2*field_size + IDX_OF(N, a, b, N-1)) = - dt_varphi(IDX_OF(N, a, b, N-1)) * inv_two_h
+	* ( varphi(IDX_OF(N, a, b, 0)) - varphi(IDX_OF(N, a, b, N-2)) );
+      
+      
+      // rho(seqN(IDX_OF(N, a, b, 0), N)) = 0.5 *
+      // 	( workspace.state(seqN(N*N*N+IDX_OF(N, a, b, 0), N)).cwiseAbs2()
+      // 	  + m * m * workspace.state(seqN(IDX_OF(N, a, b, 0), N)).cwiseAbs2()
+      // 	  + 0.25 * inv_h_sqr *
+      // 	  ( (workspace.state(seqN(IDX_OF(N, (a+1)%N, b, 0), N))
+      // 	     - workspace.state(seqN(IDX_OF(N, (a+N-1)%N, b, 0), N))).cwiseAbs2()
+      // 	    + (workspace.state(seqN(IDX_OF(N, a, (b+1)%N, 0), N))
+      // 	       - workspace.state(seqN(IDX_OF(N, a, (b+N-1)%N, 0), N))).cwiseAbs2() )
+      // 	  );
+      // rho(seqN(IDX_OF(N, a, b, 1), N-2)) += 0.5 * 0.25 * inv_h_sqr *
+      // 	(workspace.state(seqN(IDX_OF(N, a, b, 2), N-2))
+      // 	 - workspace.state(seqN(IDX_OF(N, a, b, 0), N-2))).cwiseAbs2();
+      // rho(IDX_OF(N, a, b, 0)) += 0.5 * 0.25 * inv_h_sqr *
+      // 	pow(workspace.state(IDX_OF(N, a, b, 1)) - workspace.state(IDX_OF(N, a, b, N-1)), 2);
+      // rho(IDX_OF(N, a, b, N-1)) += 0.5 * 0.25 * inv_h_sqr *
+      // 	pow(workspace.state(IDX_OF(N, a, b, 0)) - workspace.state(IDX_OF(N, a, b, N-2)), 2);
+    }
+  }
+  return q;
+}
+
 void KleinGordonEquationInFRW::operator()(const State &x, State &dxdt, const double t)
 {
   using namespace Eigen;

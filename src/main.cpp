@@ -169,9 +169,18 @@ void generate_ic(void)
     write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum_old.dat");
     write_to_file(rho_old, dir + "rho_old.dat");
   }
-
+  
   {
-    workspace.state = state_new;
+    Eigen::VectorXd q_old = Equation::compute_momentum_density(workspace, 0);
+    const long long int field_size = N*N*N;
+    Eigen::VectorXd q_x = q_old.head(field_size);
+    write_to_file(compute_power_spectrum(N, q_x, workspace.fft_wrapper), dir + "q_spectrum_old.dat");
+    write_to_file(q_old, dir + "q_old.dat");
+  }
+
+  workspace.state = state_new;
+  
+  {
     Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
     write_to_file(compute_mode_power_spectrum(N, param.L, param.m, 1.0, workspace.state, workspace.fft_wrapper), dir + "varphi_spectrum.dat");
     write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum.dat");
