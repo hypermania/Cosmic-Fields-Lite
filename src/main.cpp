@@ -140,22 +140,10 @@ void generate_ic(void)
       }
     }
   }
-
+  write_to_file(tau, dir + "tau.dat");
 
   Workspace workspace(param, unperturbed_grf);
-
-  Eigen::VectorXd state_new = boost_klein_gordon_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
-
-
   
-  write_to_file(tau, dir + "tau.dat");
-  {
-    Eigen::VectorXd varphi = state_new.head(N*N*N);
-    Eigen::VectorXd dt_varphi = state_new.tail(N*N*N);
-    write_to_file(varphi, dir + "varphi.dat");
-    write_to_file(dt_varphi, dir + "dt_varphi.dat");
-  }
-
   {
     Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
     Eigen::VectorXd dt_varphi_old = workspace.state.tail(N*N*N);
@@ -173,19 +161,62 @@ void generate_ic(void)
   {
     Eigen::VectorXd q_old = Equation::compute_momentum_density(workspace, 0);
     const long long int field_size = N*N*N;
-    Eigen::VectorXd q_x = q_old.head(field_size);
-    write_to_file(compute_power_spectrum(N, q_x, workspace.fft_wrapper), dir + "q_spectrum_old.dat");
+    Eigen::VectorXd q_spectrum(3*(N/2)*(N/2)+1);
+    q_spectrum.array() = 0;
+    for(size_t idx = 0; idx < 3; ++idx){
+      Eigen::VectorXd q_idx = q_old.segment(idx * field_size, field_size);
+      q_spectrum += compute_power_spectrum(N, q_idx, workspace.fft_wrapper);
+    }
+    write_to_file(q_spectrum, dir + "q_spectrum_old.dat");
     write_to_file(q_old, dir + "q_old.dat");
   }
 
-  workspace.state = state_new;
-  
+
+  workspace.state = boost_klein_gordon_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
+
+
+  {
+    Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
+    Eigen::VectorXd dt_varphi_old = workspace.state.tail(N*N*N);
+    write_to_file(varphi_old, dir + "varphi.dat");
+    write_to_file(dt_varphi_old, dir + "dt_varphi.dat");
+  }
+
   {
     Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
     write_to_file(compute_mode_power_spectrum(N, param.L, param.m, 1.0, workspace.state, workspace.fft_wrapper), dir + "varphi_spectrum.dat");
     write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum.dat");
     write_to_file(rho_old, dir + "rho.dat");
   }
+  
+  {
+    Eigen::VectorXd q_old = Equation::compute_momentum_density(workspace, 0);
+    const long long int field_size = N*N*N;
+    Eigen::VectorXd q_spectrum(3*(N/2)*(N/2)+1);
+    q_spectrum.array() = 0;
+    for(size_t idx = 0; idx < 3; ++idx){
+      Eigen::VectorXd q_idx = q_old.segment(idx * field_size, field_size);
+      q_spectrum += compute_power_spectrum(N, q_idx, workspace.fft_wrapper);
+    }
+    write_to_file(q_spectrum, dir + "q_spectrum.dat");
+    write_to_file(q_old, dir + "q.dat");
+  }
+
+  // Eigen::VectorXd state_new = boost_klein_gordon_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
+  
+  // {
+  //   Eigen::VectorXd varphi = state_new.head(N*N*N);
+  //   Eigen::VectorXd dt_varphi = state_new.tail(N*N*N);
+  //   write_to_file(varphi, dir + "varphi.dat");
+  //   write_to_file(dt_varphi, dir + "dt_varphi.dat");
+  // }
+  
+  // {
+  //   Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
+  //   write_to_file(compute_mode_power_spectrum(N, param.L, param.m, 1.0, workspace.state, workspace.fft_wrapper), dir + "varphi_spectrum.dat");
+  //   write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum.dat");
+  //   write_to_file(rho_old, dir + "rho.dat");
+  // }
 
   // Eigen::VectorXd varphi;
   // Eigen::VectorXd dt_varphi;
