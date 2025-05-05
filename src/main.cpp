@@ -88,7 +88,8 @@ void generate_ic(void)
 
   
   // Set the directory for output.
-  const std::string dir = "output/scalar_IC/";
+  // const std::string dir = "output/scalar_IC/";
+  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/scalar_IC/";
   prepare_directory_for_output(dir);
 
   
@@ -170,7 +171,6 @@ void generate_ic(void)
     write_to_file(q_spectrum, dir + "q_spectrum_old.dat");
     write_to_file(q_old, dir + "q_old.dat");
   }
-
 
   workspace.state = boost_klein_gordon_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
 
