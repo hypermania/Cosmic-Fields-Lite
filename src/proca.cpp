@@ -44,18 +44,18 @@ void proca_project_to_transverse(const long long int N, Eigen::VectorXd &fields,
 	long long int idx = N*(N/2+1)*a + (N/2+1)*b + c_shifted;
 
 	if(s_sqr == 0) {
-	  M_x_k(idx) = 1;
-	  M_y_k(idx) = 0;
-	  M_z_k(idx) = 0;
+	  M_x_k(idx) = 1.0;
+	  M_y_k(idx) = 0.0;
+	  M_z_k(idx) = 0.0;
 	  continue;
 	}
 	
 	double k_a = (a<=N/2) ? a : (a-N);
 	double k_b = (b<=N/2) ? b : (b-N);
 	double k_c = c;
-	M_x_k(idx) = 1 - k_a * k_a / s_sqr;
-	M_y_k(idx) = 1 - k_a * k_b / s_sqr;
-	M_z_k(idx) = 1 - k_a * k_c / s_sqr;
+	M_x_k(idx) = 1.0 - k_a * k_a / s_sqr;
+	M_y_k(idx) = - k_a * k_b / s_sqr;
+	M_z_k(idx) = - k_a * k_c / s_sqr;
 	
 	// double f_k_re = f_k(2 * idx + 0);
 	// double f_k_im = f_k(2 * idx + 1);
