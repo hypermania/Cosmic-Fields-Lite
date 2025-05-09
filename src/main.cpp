@@ -66,7 +66,9 @@ struct MyParam {
 
 void solve_field_equation(void);
 void generate_wkb_solutions(void);
-void generate_ic(void);
+void generate_ic_kg(void);
+void generate_ic_proca(void);
+void generate_ic_sp(void);
 
 int main(int argc, char **argv){
   // Runs the simulation described in Section 4.2.2 of paper.
@@ -78,10 +80,11 @@ int main(int argc, char **argv){
   // Optional: Use WKB solution to extend the simulation.
   //generate_wkb_solutions();
 
-  generate_ic();
+  // generate_ic_kg();
+  generate_ic_proca();
 }  
 
-void generate_ic(void)
+void generate_ic_kg(void)
 {
   // Set the PRNG seed.
   RandomNormal::set_generator_seed(0);
@@ -238,6 +241,129 @@ void generate_ic(void)
   //     }
   //   }
   // }
+
+}
+
+void generate_ic_proca(void)
+{
+  // Set the PRNG seed.
+  RandomNormal::set_generator_seed(0);
+
+  
+  // Set the directory for output.
+  const std::string dir = "output/scalar_IC/";
+  // const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
+  prepare_directory_for_output(dir);
+
+  
+  // Set parameters for the simulation.
+  MyParam param
+    {
+      .N = 384, // Lattice points per axis
+      .L = 384 * 0.05, // Size of the box
+      // ULDM params
+      .m = 1.0, // Mass of scalar field
+      .lambda = 0, // Lambda phi^4 coupling strength
+      //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
+      .k_ast = 5.0, // Characteristic momentum
+      .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
+      .varphi_std_dev = 1.0, // Standard deviation of field
+      .Psi_std_dev = 0.2, // Standard deviation of metric perturbation Psi
+      // FRW metric params
+      .a1 = 1.0,
+      .H1 = 0.05,
+      .t1 = 1.0 / (2 * param.H1),
+      // Start and end time for numerical integration, and time interval between saves
+      .t_start = param.t1,
+      .t_end = param.t_start + (pow(3.5 / param.a1, 2) - 1.0) / (2 * param.H1),
+      .t_interval = 49.99, // Save a snapshot every t_interval
+      // Numerical method parameter
+      .delta_t = 0.5, // Time step for numerical integration
+      // Psi approximation parameter
+      .M = 128 // Lattice points for storing / computing Psi
+    };
+  print_param(param);
+  save_param_for_Mathematica(param, dir);
+
+  
+  typedef KleinGordonEquation Equation;
+  typedef typename Equation::Workspace Workspace;
+  typedef typename Equation::State State;
+
+
+  
+  const long long int N = param.N;
+  Eigen::VectorXd tau(N*N*N);
+  // Spectrum P_tau = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
+  // Eigen::VectorXd tau = generate_gaussian_random_field(param.N, param.L, P_tau);
+
+  for(int a = 0; a < N; ++a){
+    for(int b = 0; b < N; ++b){
+      for(int c = 0; c < N; ++c){
+	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * std::numbers::pi * c / N);
+      }
+    }
+  }
+  write_to_file(tau, dir + "tau.dat");
+
+  Workspace workspace(param, unperturbed_grf);
+  
+  {
+    Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
+    Eigen::VectorXd dt_varphi_old = workspace.state.tail(N*N*N);
+    write_to_file(varphi_old, dir + "varphi_old.dat");
+    write_to_file(dt_varphi_old, dir + "dt_varphi_old.dat");
+  }
+
+  {
+    Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
+    write_to_file(compute_mode_power_spectrum(N, param.L, param.m, 1.0, workspace.state, workspace.fft_wrapper), dir + "varphi_spectrum_old.dat");
+    write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum_old.dat");
+    write_to_file(rho_old, dir + "rho_old.dat");
+  }
+  
+  {
+    Eigen::VectorXd q_old = Equation::compute_momentum_density(workspace, 0);
+    const long long int field_size = N*N*N;
+    Eigen::VectorXd q_spectrum(3*(N/2)*(N/2)+1);
+    q_spectrum.array() = 0;
+    for(size_t idx = 0; idx < 3; ++idx){
+      Eigen::VectorXd q_idx = q_old.segment(idx * field_size, field_size);
+      q_spectrum += compute_power_spectrum(N, q_idx, workspace.fft_wrapper);
+    }
+    write_to_file(q_spectrum, dir + "q_spectrum_old.dat");
+    write_to_file(q_old, dir + "q_old.dat");
+  }
+
+  workspace.state = boost_klein_gordon_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
+
+
+  {
+    Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
+    Eigen::VectorXd dt_varphi_old = workspace.state.tail(N*N*N);
+    write_to_file(varphi_old, dir + "varphi.dat");
+    write_to_file(dt_varphi_old, dir + "dt_varphi.dat");
+  }
+
+  {
+    Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
+    write_to_file(compute_mode_power_spectrum(N, param.L, param.m, 1.0, workspace.state, workspace.fft_wrapper), dir + "varphi_spectrum.dat");
+    write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum.dat");
+    write_to_file(rho_old, dir + "rho.dat");
+  }
+  
+  {
+    Eigen::VectorXd q_old = Equation::compute_momentum_density(workspace, 0);
+    const long long int field_size = N*N*N;
+    Eigen::VectorXd q_spectrum(3*(N/2)*(N/2)+1);
+    q_spectrum.array() = 0;
+    for(size_t idx = 0; idx < 3; ++idx){
+      Eigen::VectorXd q_idx = q_old.segment(idx * field_size, field_size);
+      q_spectrum += compute_power_spectrum(N, q_idx, workspace.fft_wrapper);
+    }
+    write_to_file(q_spectrum, dir + "q_spectrum.dat");
+    write_to_file(q_old, dir + "q.dat");
+  }
 
 }
 

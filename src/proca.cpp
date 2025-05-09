@@ -17,7 +17,7 @@ void proca_project_to_transverse(const long long int N, Eigen::VectorXd &fields,
   Eigen::VectorXd Ax_k;
   Eigen::VectorXd Ay_k;
   Eigen::VectorXd Az_k;
-  
+
   {
     Eigen::VectorXd Ai = fields.segment(0, lattice_size);
     Ax_k = fft_wrapper.execute_d2z(Ai);
@@ -30,9 +30,9 @@ void proca_project_to_transverse(const long long int N, Eigen::VectorXd &fields,
   // M_ij = I_ij - k_i k_j / k^2
   // new_Ax_k = M_xx Ax_k + M_xy Ay_k + M_xz Az_k
 
-  Eigen::VectorXd M_x_k(Ax_k.size() / 2);
-  Eigen::VectorXd M_y_k(Ax_k.size() / 2);
-  Eigen::VectorXd M_z_k(Ax_k.size() / 2);
+  Eigen::VectorXd M_x_k(Ax_k.size());
+  Eigen::VectorXd M_y_k(Ax_k.size());
+  Eigen::VectorXd M_z_k(Ax_k.size());
 
   for(long long int a = 0; a < N; ++a){
     for(long long int b = 0; b < N; ++b){
@@ -44,24 +44,30 @@ void proca_project_to_transverse(const long long int N, Eigen::VectorXd &fields,
 	long long int idx = N*(N/2+1)*a + (N/2+1)*b + c_shifted;
 
 	if(s_sqr == 0) {
-	  M_x_k(idx) = 1.0;
-	  M_y_k(idx) = 0.0;
-	  M_z_k(idx) = 0.0;
+	  M_x_k.segment(2 * idx, 2).array() = 1.0;
+	  M_y_k.segment(2 * idx, 2).array() = 0.0;
+	  M_z_k.segment(2 * idx, 2).array() = 0.0;
 	  continue;
 	}
 	
 	double k_a = (a<=N/2) ? a : (a-N);
 	double k_b = (b<=N/2) ? b : (b-N);
 	double k_c = c;
-	M_x_k(idx) = 1.0 - k_a * k_a / s_sqr;
-	M_y_k(idx) = - k_a * k_b / s_sqr;
-	M_z_k(idx) = - k_a * k_c / s_sqr;
+	M_x_k.segment(2 * idx, 2).array() = 1.0 - k_a * k_a / s_sqr;
+	M_y_k.segment(2 * idx, 2).array() = - k_a * k_b / s_sqr;
+	M_z_k.segment(2 * idx, 2).array() = - k_a * k_c / s_sqr;
 	
-	// double f_k_re = f_k(2 * idx + 0);
-	// double f_k_im = f_k(2 * idx + 1);
-	// spectrum(s_sqr) += f_k_re * f_k_re + f_k_im * f_k_im;
       }
     }
   }
+  
+  // Eigen::VectorXd new_Ax_k(Ax_k.size());
+  // Eigen::VectorXd new_Ay_k(Ax_k.size());
+  // Eigen::VectorXd new_Az_k(Ax_k.size());
 
+  
+  {
+    Eigen::VectorXd new_Ax_k = (M_x_k.arrary() * Ax_k.array() + M_y_k.arrary() * Ay_k.array() + M_z_k.arrary() * Az_k.array()).matrix();
+    fields.segment(0, lattice_size) = fft_wrapper.execute_z2d(new_Ax_k) / lattice_size;
+  }
 }
