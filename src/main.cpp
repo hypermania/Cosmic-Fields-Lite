@@ -247,6 +247,7 @@ void generate_ic_kg(void)
 
 void generate_ic_proca(void)
 {
+  using namespace std::numbers;
   // Set the PRNG seed.
   RandomNormal::set_generator_seed(0);
 
@@ -318,16 +319,21 @@ void generate_ic_proca(void)
   auto At = Equation::compute_At(workspace, 0);
   std::cout << "before : " << At.squaredNorm() / pow(param.N, 3) << std::endl;
 
+  Eigen::VectorXd At_predicted(N*N*N);
   for(int a = 0; a < N; ++a){
     for(int b = 0; b < N; ++b){
       for(int c = 0; c < N; ++c){
-	workspace.state(3*N*N*N + IDX_OF(N, a, b, c)) = -cos(2 * std::numbers::pi * a / N);
+	workspace.state(3*N*N*N + IDX_OF(N, a, b, c)) = cos(2 * std::numbers::pi * a / N);
+
+	double k_IR = 2 * pi / param.L;
+	At_predicted(IDX_OF(N, a, b, c)) = sin(2 * std::numbers::pi * a / N) * k_IR / (k_IR * k_IR + param.m * param.m);
       }
     }
   }
   
   At = Equation::compute_At(workspace, 0);
   std::cout << "after : " << At.squaredNorm() / pow(param.N, 3) << std::endl;
+  std::cout << "difference : " << (At + At_predicted).squaredNorm() / pow(param.N, 3) << std::endl;
   return;
 
   // Spectrum P = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.varphi_std_dev, param.k_ast, 0);

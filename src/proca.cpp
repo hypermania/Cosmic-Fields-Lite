@@ -120,12 +120,6 @@ ProcaEquation::Vector ProcaEquation::compute_At(Workspace &workspace, const doub
 	long long int s_sqr = a_shifted*a_shifted + b_shifted*b_shifted + c_shifted*c_shifted;
 	long long int idx = N*(N/2+1)*a + (N/2+1)*b + c_shifted;
 	
-	// if(s_sqr == 0) {
-	//   At_k(2 * idx + 0) = 0;
-	//   At_k(2 * idx + 1) = 0;
-	//   continue;
-	// }
-	
 	double k_a = ((a<=N/2) ? a : (a-N)) * (2 * pi / L);
 	double k_b = ((b<=N/2) ? b : (b-N)) * (2 * pi / L);
 	double k_c = c * (2 * pi / L);
