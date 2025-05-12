@@ -20,7 +20,7 @@ fftwWrapper::~fftwWrapper()
   fftw_destroy_plan(plan_inplace_z2d);
 }
 
-
+/*
 Eigen::VectorXd fftwWrapper::execute_d2z(Eigen::VectorXd &in)
 {
   Eigen::VectorXd out(N * N * (N / 2 + 1) * 2);
@@ -32,7 +32,7 @@ Eigen::VectorXd fftwWrapper::execute_d2z(Eigen::VectorXd &in)
   fftw_execute_dft_r2c(plan_d2z, in.data(), reinterpret_cast<fftw_complex *>(out.data()));
   return out;
 }
-
+*/
 
 // This function destroys the input.
 // See FFTW's documentation (https://www.fftw.org/fftw3_doc/Planner-Flags.html).

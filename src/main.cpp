@@ -24,6 +24,7 @@
 #include "midpoint.hpp"
 #include "wkb.hpp"
 #include "field_booster.hpp"
+#include "proca.hpp"
 
 #ifndef DISABLE_CUDA
 #include <thrust/device_vector.h>
@@ -251,7 +252,7 @@ void generate_ic_proca(void)
 
   
   // Set the directory for output.
-  const std::string dir = "output/scalar_IC/";
+  const std::string dir = "output/proca_IC/";
   // const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
   prepare_directory_for_output(dir);
 
@@ -286,27 +287,72 @@ void generate_ic_proca(void)
   save_param_for_Mathematica(param, dir);
 
   
-  typedef KleinGordonEquation Equation;
+  typedef ProcaEquation Equation;
   typedef typename Equation::Workspace Workspace;
   typedef typename Equation::State State;
 
 
   
   const long long int N = param.N;
+
+
+  
   Eigen::VectorXd tau(N*N*N);
   // Spectrum P_tau = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
   // Eigen::VectorXd tau = generate_gaussian_random_field(param.N, param.L, P_tau);
 
+  // for(int a = 0; a < N; ++a){
+  //   for(int b = 0; b < N; ++b){
+  //     for(int c = 0; c < N; ++c){
+  // 	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * std::numbers::pi * c / N);
+  //     }
+  //   }
+  // }
+  // write_to_file(tau, dir + "tau.dat");
+  auto proca_initializer = [](const auto param, auto &workspace) {
+    const long long int N = param.N;
+    const long long int lattice_size = N*N*N;
+    workspace.state = Eigen::VectorXd::Zero(6 * lattice_size);
+  };
+  Workspace workspace(param, proca_initializer);
+  auto At = Equation::compute_At(workspace, 0);
+  std::cout << "before : " << At.squaredNorm() / pow(param.N, 3) << std::endl;
+
   for(int a = 0; a < N; ++a){
     for(int b = 0; b < N; ++b){
       for(int c = 0; c < N; ++c){
-	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * std::numbers::pi * c / N);
+	workspace.state(3*N*N*N + IDX_OF(N, a, b, c)) = -cos(2 * std::numbers::pi * a / N);
       }
     }
   }
-  write_to_file(tau, dir + "tau.dat");
+  
+  At = Equation::compute_At(workspace, 0);
+  std::cout << "after : " << At.squaredNorm() / pow(param.N, 3) << std::endl;
+  return;
 
-  Workspace workspace(param, unperturbed_grf);
+  // Spectrum P = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.varphi_std_dev, param.k_ast, 0);
+  // Eigen::VectorXd random_proca = generate_gaussian_random_proca_field(param.N, param.L, P);
+  
+  /*
+  Eigen::VectorXd random_proca(3*N*N*N);
+  for(int a = 0; a < N; ++a){
+    for(int b = 0; b < N; ++b){
+      for(int c = 0; c < N; ++c){
+	random_proca(1*N*N*N + IDX_OF(N, a, b, c)) = - cos(2 * std::numbers::pi * c / N);
+      }
+    }
+  }
+  // random_proca.head(N*N*N) = 
+  ProcaTransverseProjector projector(N);
+
+  std::cout << "before : " << random_proca.squaredNorm() / pow(param.N, 3) << std::endl;
+  projector.proca_project_to_transverse(random_proca, workspace.fft_wrapper);
+  std::cout << "after : " << random_proca.squaredNorm() / pow(param.N, 3) << std::endl;
+  projector.proca_project_to_transverse(random_proca, workspace.fft_wrapper);
+  std::cout << "check idempotence : " << random_proca.squaredNorm() / pow(param.N, 3) << std::endl;
+
+  return;
+  */
   
   {
     Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
