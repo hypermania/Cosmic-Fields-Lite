@@ -253,8 +253,8 @@ void generate_ic_proca(void)
 
   
   // Set the directory for output.
-  const std::string dir = "output/proca_IC/";
-  // const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
+  // const std::string dir = "output/proca_IC/";
+  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
   prepare_directory_for_output(dir);
 
   
@@ -292,49 +292,46 @@ void generate_ic_proca(void)
   typedef typename Equation::Workspace Workspace;
   typedef typename Equation::State State;
 
-
-  
   const long long int N = param.N;
-
-
   
   Eigen::VectorXd tau(N*N*N);
   // Spectrum P_tau = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
   // Eigen::VectorXd tau = generate_gaussian_random_field(param.N, param.L, P_tau);
 
-  // for(int a = 0; a < N; ++a){
-  //   for(int b = 0; b < N; ++b){
-  //     for(int c = 0; c < N; ++c){
-  // 	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * std::numbers::pi * c / N);
-  //     }
-  //   }
-  // }
-  // write_to_file(tau, dir + "tau.dat");
-  auto proca_initializer = [](const auto param, auto &workspace) {
-    const long long int N = param.N;
-    const long long int lattice_size = N*N*N;
-    workspace.state = Eigen::VectorXd::Zero(6 * lattice_size);
-  };
-  Workspace workspace(param, proca_initializer);
-  auto At = Equation::compute_At(workspace, 0);
-  std::cout << "before : " << At.squaredNorm() / pow(param.N, 3) << std::endl;
-
-  Eigen::VectorXd At_predicted(N*N*N);
   for(int a = 0; a < N; ++a){
     for(int b = 0; b < N; ++b){
       for(int c = 0; c < N; ++c){
-	workspace.state(3*N*N*N + IDX_OF(N, a, b, c)) = cos(2 * std::numbers::pi * a / N);
-
-	double k_IR = 2 * pi / param.L;
-	At_predicted(IDX_OF(N, a, b, c)) = sin(2 * std::numbers::pi * a / N) * k_IR / (k_IR * k_IR + param.m * param.m);
+	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * std::numbers::pi * c / N);
       }
     }
   }
+  // write_to_file(tau, dir + "tau.dat");
+  // auto proca_initializer = [](const auto param, auto &workspace) {
+  //   const long long int N = param.N;
+  //   const long long int lattice_size = N*N*N;
+  //   workspace.state = Eigen::VectorXd::Zero(6 * lattice_size);
+  // };
+  Workspace workspace(param, unperturbed_proca_grf);
   
-  At = Equation::compute_At(workspace, 0);
-  std::cout << "after : " << At.squaredNorm() / pow(param.N, 3) << std::endl;
-  std::cout << "difference : " << (At + At_predicted).squaredNorm() / pow(param.N, 3) << std::endl;
-  return;
+  // auto At = Equation::compute_At(workspace, 0);
+  // std::cout << "before : " << At.squaredNorm() / pow(param.N, 3) << std::endl;
+
+  // Eigen::VectorXd At_predicted(N*N*N);
+  // for(int a = 0; a < N; ++a){
+  //   for(int b = 0; b < N; ++b){
+  //     for(int c = 0; c < N; ++c){
+  // 	workspace.state(5*N*N*N + IDX_OF(N, a, b, c)) = cos(2 * std::numbers::pi * c / N);
+
+  // 	double k_IR = 2 * pi / param.L;
+  // 	At_predicted(IDX_OF(N, a, b, c)) = sin(2 * std::numbers::pi * c / N) * k_IR / (k_IR * k_IR + param.m * param.m);
+  //     }
+  //   }
+  // }
+  
+  // At = Equation::compute_At(workspace, 0);
+  // std::cout << "after : " << At.squaredNorm() / pow(param.N, 3) << std::endl;
+  // std::cout << "difference : " << (At - At_predicted).squaredNorm() / pow(param.N, 3) << std::endl;
+  // return;
 
   // Spectrum P = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.varphi_std_dev, param.k_ast, 0);
   // Eigen::VectorXd random_proca = generate_gaussian_random_proca_field(param.N, param.L, P);
@@ -360,12 +357,12 @@ void generate_ic_proca(void)
   return;
   */
   
-  {
-    Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
-    Eigen::VectorXd dt_varphi_old = workspace.state.tail(N*N*N);
-    write_to_file(varphi_old, dir + "varphi_old.dat");
-    write_to_file(dt_varphi_old, dir + "dt_varphi_old.dat");
-  }
+  // {
+  //   Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
+  //   Eigen::VectorXd dt_varphi_old = workspace.state.tail(N*N*N);
+  //   write_to_file(varphi_old, dir + "varphi_old.dat");
+  //   write_to_file(dt_varphi_old, dir + "dt_varphi_old.dat");
+  // }
 
   {
     Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
@@ -387,15 +384,16 @@ void generate_ic_proca(void)
     write_to_file(q_old, dir + "q_old.dat");
   }
 
-  workspace.state = boost_klein_gordon_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
+  return;
+  
+  workspace.state = boost_proca_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
 
-
-  {
-    Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
-    Eigen::VectorXd dt_varphi_old = workspace.state.tail(N*N*N);
-    write_to_file(varphi_old, dir + "varphi.dat");
-    write_to_file(dt_varphi_old, dir + "dt_varphi.dat");
-  }
+  // {
+  //   Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
+  //   Eigen::VectorXd dt_varphi_old = workspace.state.tail(N*N*N);
+  //   write_to_file(varphi_old, dir + "varphi.dat");
+  //   write_to_file(dt_varphi_old, dir + "dt_varphi.dat");
+  // }
 
   {
     Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);

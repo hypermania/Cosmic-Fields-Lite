@@ -288,14 +288,34 @@ Eigen::VectorXd boost_klein_gordon_field(const long long int N, const double L, 
   return state_new;
 }
 
-void boost_proca_field(const long long int N, const double L, const double m, const Eigen::VectorXd &tau, const Eigen::VectorXd &state_init, const double abs_delta_t)
+Eigen::VectorXd boost_proca_field(const long long int N, const double L, const double m, const Eigen::VectorXd &tau, const Eigen::VectorXd &state_init, const double abs_delta_t)
 {
-  return;
-}
+  Eigen::VectorXd state_new(state_init.size());
 
+  const long long int lattice_size = N*N*N;
+  Eigen::VectorXd component_init(2 * lattice_size);
+  Eigen::VectorXd component_new(2 * lattice_size);
+
+  component_init.segment(0, lattice_size) = state_init.segment(0, lattice_size);
+  component_init.segment(lattice_size, lattice_size) = state_init.segment(3 * lattice_size, lattice_size);
+  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, abs_delta_t, component_new);
+  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, -abs_delta_t, component_new);
+  state_new.segment(0, lattice_size) = component_new.segment(0, lattice_size);
+  state_new.segment(3 * lattice_size, lattice_size) = component_new.segment(lattice_size, lattice_size);
+
+  component_init.segment(0, lattice_size) = state_init.segment(lattice_size, lattice_size);
+  component_init.segment(lattice_size, lattice_size) = state_init.segment(4 * lattice_size, lattice_size);
+  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, abs_delta_t, component_new);
+  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, -abs_delta_t, component_new);
+  state_new.segment(lattice_size, lattice_size) = component_new.segment(0, lattice_size);
+  state_new.segment(4 * lattice_size, lattice_size) = component_new.segment(lattice_size, lattice_size);
+
+  component_init.segment(0, lattice_size) = state_init.segment(2 * lattice_size, lattice_size);
+  component_init.segment(lattice_size, lattice_size) = state_init.segment(5 * lattice_size, lattice_size);
+  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, abs_delta_t, component_new);
+  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, -abs_delta_t, component_new);
+  state_new.segment(2 * lattice_size, lattice_size) = component_new.segment(0, lattice_size);
+  state_new.segment(5 * lattice_size, lattice_size) = component_new.segment(lattice_size, lattice_size);
   
-// auto evolve_and_set_IC =
-//   [N,L,m](const Eigen::VectorXd &tau, const Eigen::VectorXd &state_init, double t, const double delta_t, Eigen::VectorXd &state_new)->void {
-
-//   };
-
+  return state_new;
+}

@@ -106,7 +106,7 @@ struct ProcaEquation {
     \param t The current time parameter.
     \return A vector of size \f$ N^3 \f$, giving the energy density profile \f$ \rho = \frac12 (\dot{\varphi}^2 + (\nabla\varphi)^2 + m^2 \varphi^2 \f$ on the lattice.
   */
-  static Vector compute_energy_density(const Workspace &workspace, const double t);
+  static Vector compute_energy_density(Workspace &workspace, const double t);
 
 
   /*!
@@ -115,7 +115,7 @@ struct ProcaEquation {
     \param t The current time parameter.
     \return A vector of size \f$ 3 N^3 \f$, giving the momentum density profile \f$ {\bf q} = - \dot{\varphi} \nabla\varphi \f$ on the lattice in x, y, z directions.
   */
-  static Vector compute_momentum_density(const Workspace &workspace, const double t);
+  static Vector compute_momentum_density(Workspace &workspace, const double t);
 };
 
 #endif
