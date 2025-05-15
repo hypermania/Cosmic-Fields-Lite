@@ -270,7 +270,7 @@ void generate_ic_proca(void)
       .k_ast = 5.0, // Characteristic momentum
       .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
       .varphi_std_dev = 1.0, // Standard deviation of field
-      .Psi_std_dev = 0.2, // Standard deviation of metric perturbation Psi
+      .Psi_std_dev = 0.1, // Standard deviation of metric perturbation Psi
       // FRW metric params
       .a1 = 1.0,
       .H1 = 0.05,
@@ -294,17 +294,19 @@ void generate_ic_proca(void)
 
   const long long int N = param.N;
   
-  Eigen::VectorXd tau(N*N*N);
-  // Spectrum P_tau = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
-  // Eigen::VectorXd tau = generate_gaussian_random_field(param.N, param.L, P_tau);
+  // Eigen::VectorXd tau(N*N*N);
+  // for(int a = 0; a < N; ++a){
+  //   for(int b = 0; b < N; ++b){
+  //     for(int c = 0; c < N; ++c){
+  // 	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * std::numbers::pi * c / N);
+  //     }
+  //   }
+  // }
+  
+  Spectrum P_tau = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
+  Eigen::VectorXd tau = generate_gaussian_random_field(param.N, param.L, P_tau);
 
-  for(int a = 0; a < N; ++a){
-    for(int b = 0; b < N; ++b){
-      for(int c = 0; c < N; ++c){
-	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * std::numbers::pi * c / N);
-      }
-    }
-  }
+
   // write_to_file(tau, dir + "tau.dat");
   // auto proca_initializer = [](const auto param, auto &workspace) {
   //   const long long int N = param.N;
@@ -313,6 +315,90 @@ void generate_ic_proca(void)
   // };
   Workspace workspace(param, unperturbed_proca_grf);
   
+  {
+    ProcaTransverseProjector projector(N);
+    Eigen::VectorXd A = workspace.state.segment(0, 3*N*N*N);
+    Eigen::VectorXd dt_A = workspace.state.segment(3*N*N*N, 3*N*N*N);
+    projector.proca_project_to_transverse(A, workspace.fft_wrapper);
+    projector.proca_project_to_transverse(dt_A, workspace.fft_wrapper);
+    workspace.state.segment(0, 3*N*N*N) = A;
+    workspace.state.segment(3*N*N*N, 3*N*N*N) = dt_A;
+  }
+  
+  {
+    Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
+    write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum_old.dat");
+    write_to_file(rho_old, dir + "rho_old.dat");
+  }
+
+  {
+    const long long int lattice_size = N*N*N;
+    Eigen::VectorXd state_x(2*lattice_size);
+    Eigen::VectorXd state_y(2*lattice_size);
+    Eigen::VectorXd state_z(2*lattice_size);
+    state_x.segment(0, lattice_size) = workspace.state.segment(0, lattice_size);
+    state_x.segment(lattice_size, lattice_size) = workspace.state.segment(3*lattice_size, lattice_size);
+    state_y.segment(0, lattice_size) = workspace.state.segment(lattice_size, lattice_size);
+    state_y.segment(lattice_size, lattice_size) = workspace.state.segment(4*lattice_size, lattice_size);
+    state_z.segment(0, lattice_size) = workspace.state.segment(2*lattice_size, lattice_size);
+    state_z.segment(lattice_size, lattice_size) = workspace.state.segment(5*lattice_size, lattice_size);
+    Eigen::VectorXd spectrum = compute_mode_power_spectrum(N, param.L, param.m, 1.0, state_x, workspace.fft_wrapper);
+    spectrum += compute_mode_power_spectrum(N, param.L, param.m, 1.0, state_y, workspace.fft_wrapper);
+    spectrum += compute_mode_power_spectrum(N, param.L, param.m, 1.0, state_z, workspace.fft_wrapper);
+    write_to_file(spectrum, dir + "varphi_spectrum_old.dat");
+  }
+  
+  {
+    Eigen::VectorXd q_old = Equation::compute_momentum_density(workspace, 0);
+    const long long int field_size = N*N*N;
+    Eigen::VectorXd q_spectrum(3*(N/2)*(N/2)+1);
+    q_spectrum.array() = 0;
+    for(size_t idx = 0; idx < 3; ++idx){
+      Eigen::VectorXd q_idx = q_old.segment(idx * field_size, field_size);
+      q_spectrum += compute_power_spectrum(N, q_idx, workspace.fft_wrapper);
+    }
+    write_to_file(q_spectrum, dir + "q_spectrum_old.dat");
+    write_to_file(q_old, dir + "q_old.dat");
+  }
+
+  workspace.state = boost_proca_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
+
+  {
+    Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
+    write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum.dat");
+    write_to_file(rho_old, dir + "rho.dat");
+  }
+
+  {
+    const long long int lattice_size = N*N*N;
+    Eigen::VectorXd state_x(2*lattice_size);
+    Eigen::VectorXd state_y(2*lattice_size);
+    Eigen::VectorXd state_z(2*lattice_size);
+    state_x.segment(0, lattice_size) = workspace.state.segment(0, lattice_size);
+    state_x.segment(lattice_size, lattice_size) = workspace.state.segment(3*lattice_size, lattice_size);
+    state_y.segment(0, lattice_size) = workspace.state.segment(lattice_size, lattice_size);
+    state_y.segment(lattice_size, lattice_size) = workspace.state.segment(4*lattice_size, lattice_size);
+    state_z.segment(0, lattice_size) = workspace.state.segment(2*lattice_size, lattice_size);
+    state_z.segment(lattice_size, lattice_size) = workspace.state.segment(5*lattice_size, lattice_size);
+    Eigen::VectorXd spectrum = compute_mode_power_spectrum(N, param.L, param.m, 1.0, state_x, workspace.fft_wrapper);
+    spectrum += compute_mode_power_spectrum(N, param.L, param.m, 1.0, state_y, workspace.fft_wrapper);
+    spectrum += compute_mode_power_spectrum(N, param.L, param.m, 1.0, state_z, workspace.fft_wrapper);
+    write_to_file(spectrum, dir + "varphi_spectrum.dat");
+  }
+  
+  {
+    Eigen::VectorXd q_old = Equation::compute_momentum_density(workspace, 0);
+    const long long int field_size = N*N*N;
+    Eigen::VectorXd q_spectrum(3*(N/2)*(N/2)+1);
+    q_spectrum.array() = 0;
+    for(size_t idx = 0; idx < 3; ++idx){
+      Eigen::VectorXd q_idx = q_old.segment(idx * field_size, field_size);
+      q_spectrum += compute_power_spectrum(N, q_idx, workspace.fft_wrapper);
+    }
+    write_to_file(q_spectrum, dir + "q_spectrum.dat");
+    write_to_file(q_old, dir + "q.dat");
+  }
+
   // auto At = Equation::compute_At(workspace, 0);
   // std::cout << "before : " << At.squaredNorm() / pow(param.N, 3) << std::endl;
 
@@ -357,64 +443,6 @@ void generate_ic_proca(void)
   return;
   */
   
-  // {
-  //   Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
-  //   Eigen::VectorXd dt_varphi_old = workspace.state.tail(N*N*N);
-  //   write_to_file(varphi_old, dir + "varphi_old.dat");
-  //   write_to_file(dt_varphi_old, dir + "dt_varphi_old.dat");
-  // }
-
-  {
-    Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
-    write_to_file(compute_mode_power_spectrum(N, param.L, param.m, 1.0, workspace.state, workspace.fft_wrapper), dir + "varphi_spectrum_old.dat");
-    write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum_old.dat");
-    write_to_file(rho_old, dir + "rho_old.dat");
-  }
-  
-  {
-    Eigen::VectorXd q_old = Equation::compute_momentum_density(workspace, 0);
-    const long long int field_size = N*N*N;
-    Eigen::VectorXd q_spectrum(3*(N/2)*(N/2)+1);
-    q_spectrum.array() = 0;
-    for(size_t idx = 0; idx < 3; ++idx){
-      Eigen::VectorXd q_idx = q_old.segment(idx * field_size, field_size);
-      q_spectrum += compute_power_spectrum(N, q_idx, workspace.fft_wrapper);
-    }
-    write_to_file(q_spectrum, dir + "q_spectrum_old.dat");
-    write_to_file(q_old, dir + "q_old.dat");
-  }
-
-  return;
-  
-  workspace.state = boost_proca_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
-
-  // {
-  //   Eigen::VectorXd varphi_old = workspace.state.head(N*N*N);
-  //   Eigen::VectorXd dt_varphi_old = workspace.state.tail(N*N*N);
-  //   write_to_file(varphi_old, dir + "varphi.dat");
-  //   write_to_file(dt_varphi_old, dir + "dt_varphi.dat");
-  // }
-
-  {
-    Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
-    write_to_file(compute_mode_power_spectrum(N, param.L, param.m, 1.0, workspace.state, workspace.fft_wrapper), dir + "varphi_spectrum.dat");
-    write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum.dat");
-    write_to_file(rho_old, dir + "rho.dat");
-  }
-  
-  {
-    Eigen::VectorXd q_old = Equation::compute_momentum_density(workspace, 0);
-    const long long int field_size = N*N*N;
-    Eigen::VectorXd q_spectrum(3*(N/2)*(N/2)+1);
-    q_spectrum.array() = 0;
-    for(size_t idx = 0; idx < 3; ++idx){
-      Eigen::VectorXd q_idx = q_old.segment(idx * field_size, field_size);
-      q_spectrum += compute_power_spectrum(N, q_idx, workspace.fft_wrapper);
-    }
-    write_to_file(q_spectrum, dir + "q_spectrum.dat");
-    write_to_file(q_old, dir + "q.dat");
-  }
-
 }
 
 void solve_field_equation(void)
