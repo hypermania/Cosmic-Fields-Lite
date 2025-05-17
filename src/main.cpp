@@ -70,6 +70,7 @@ void generate_wkb_solutions(void);
 void generate_ic_kg(void);
 void generate_ic_proca(void);
 void generate_ic_sp(void);
+void check_proca_q(void);
 
 int main(int argc, char **argv){
   // Runs the simulation described in Section 4.2.2 of paper.
@@ -82,7 +83,8 @@ int main(int argc, char **argv){
   //generate_wkb_solutions();
 
   // generate_ic_kg();
-  generate_ic_proca();
+  // generate_ic_proca();
+  check_proca_q();
 }  
 
 void generate_ic_kg(void)
@@ -302,18 +304,26 @@ void generate_ic_proca(void)
   //     }
   //   }
   // }
-  
-  Spectrum P_tau = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
-  Eigen::VectorXd tau = generate_gaussian_random_field(param.N, param.L, P_tau);
 
 
-  // write_to_file(tau, dir + "tau.dat");
+
   // auto proca_initializer = [](const auto param, auto &workspace) {
   //   const long long int N = param.N;
   //   const long long int lattice_size = N*N*N;
   //   workspace.state = Eigen::VectorXd::Zero(6 * lattice_size);
   // };
+  
   Workspace workspace(param, unperturbed_proca_grf);
+
+  Eigen::VectorXd tau;
+  {
+    Spectrum P_delta_dot = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
+    Eigen::VectorXd delta_dot = generate_gaussian_random_field(param.N, param.L, P_delta_dot);
+    tau = compute_inverse_laplacian(param.N, param.L, delta_dot, workspace.fft_wrapper);
+    std::cout << "max tau = " << tau.maxCoeff() << std::endl;
+    std::cout << "min tau = " << tau.minCoeff() << std::endl;
+  }
+  write_to_file(tau, dir + "tau.dat");
   
   {
     ProcaTransverseProjector projector(N);
@@ -442,6 +452,74 @@ void generate_ic_proca(void)
 
   return;
   */
+  
+}
+
+void check_proca_q(void)
+{
+  using namespace std::numbers;
+  // Set the PRNG seed.
+  RandomNormal::set_generator_seed(0);
+
+  // Set the directory for output.
+  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
+  prepare_directory_for_output(dir);
+  
+  // Set parameters for the simulation.
+  MyParam param
+    {
+      .N = 384, // Lattice points per axis
+      .L = 384 * 0.05, // Size of the box
+      // ULDM params
+      .m = 1.0, // Mass of scalar field
+      .lambda = 0, // Lambda phi^4 coupling strength
+      //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
+      .k_ast = 5.0, // Characteristic momentum
+      .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
+      .varphi_std_dev = 1.0, // Standard deviation of field
+      .Psi_std_dev = 0.1, // Standard deviation of metric perturbation Psi
+      // FRW metric params
+      .a1 = 1.0,
+      .H1 = 0.05,
+      .t1 = 1.0 / (2 * param.H1),
+      // Start and end time for numerical integration, and time interval between saves
+      .t_start = param.t1,
+      .t_end = param.t_start + (pow(3.5 / param.a1, 2) - 1.0) / (2 * param.H1),
+      .t_interval = 49.99, // Save a snapshot every t_interval
+      // Numerical method parameter
+      .delta_t = 0.5, // Time step for numerical integration
+      // Psi approximation parameter
+      .M = 128 // Lattice points for storing / computing Psi
+    };
+  print_param(param);
+  save_param_for_Mathematica(param, dir);
+
+  
+  typedef ProcaEquation Equation;
+  typedef typename Equation::Workspace Workspace;
+  typedef typename Equation::State State;
+
+  const long long int N = param.N;
+  const long long int lattice_size = N*N*N;
+
+  // Eigen::VectorXd rho_spectrum = load_VectorXd_from_file(dir + "rho_spectrum_old.dat");
+  // const double rho_bar = sqrt(rho_spectrum[0] / (lattice_size * lattice_size));
+  
+  Eigen::VectorXd diff_q_0 = load_VectorXd_from_file(dir + "diff_q_0.dat");
+  Eigen::VectorXd diff_q_1 = load_VectorXd_from_file(dir + "diff_q_1.dat");
+  Eigen::VectorXd diff_q_2 = load_VectorXd_from_file(dir + "diff_q_2.dat");
+  
+  std::cout << "point 0 \n";
+
+
+  auto fft_wrapper = fftwWrapper(N);
+  Eigen::VectorXd diff_q_spectrum(3*(N/2)*(N/2)+1);
+  diff_q_spectrum.array() = 0;
+  
+  diff_q_spectrum += compute_power_spectrum(N, diff_q_0, fft_wrapper);
+  diff_q_spectrum += compute_power_spectrum(N, diff_q_1, fft_wrapper);
+  diff_q_spectrum += compute_power_spectrum(N, diff_q_2, fft_wrapper);
+  write_to_file(diff_q_spectrum, dir + "diff_q_spectrum.dat");
   
 }
 
