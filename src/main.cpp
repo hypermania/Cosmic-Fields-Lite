@@ -537,22 +537,23 @@ void generate_ic_sp(void)
 
   
   // Set parameters for the simulation.
+  // We use units in which a_eq = 1, H_eq = 1.
   MyParam param
     {
       .N = 384, // Lattice points per axis
-      .L = 384 * 0.05, // Size of the box
+      .L = 25.13274122871835, // Size of the box
       // ULDM params
-      .m = 1.0, // Mass of scalar field
+      .m = 1e2, // Mass of scalar field
       .lambda = 0, // Lambda phi^4 coupling strength
       //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
-      .k_ast = 5.0, // Characteristic momentum
+      .k_ast = 4.0, // Characteristic momentum
       .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
       .varphi_std_dev = 1.0, // Standard deviation of field
       .Psi_std_dev = 0.1, // Standard deviation of metric perturbation Psi
       // FRW metric params
-      .a1 = 1.0,
-      .H1 = 0.05,
-      .t1 = 1.0 / (2 * param.H1),
+      .a1 = 64.0,
+      .H1 = 1.0 / 512.0,
+      .t1 = 2.0 / (3 * param.H1),
       // Start and end time for numerical integration, and time interval between saves
       .t_start = param.t1,
       .t_end = param.t_start + (pow(3.5 / param.a1, 2) - 1.0) / (2 * param.H1),
