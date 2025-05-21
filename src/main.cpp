@@ -531,8 +531,8 @@ void generate_ic_sp(void)
 
   
   // Set the directory for output.
-  // const std::string dir = "output/proca_IC/";
-  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/SP_IC/";
+  const std::string dir = "output/SP_IC/";
+  // const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/SP_IC/";
   prepare_directory_for_output(dir);
 
   
