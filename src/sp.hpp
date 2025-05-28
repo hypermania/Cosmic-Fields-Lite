@@ -14,15 +14,15 @@
 // Namely, 3 copies of a Klein Gordon field.
 
 /*! 
-  \brief Generate 3 concatenated Gaussian random fields. Namely a Proca field.
+  \brief Generate 3 concatenated Gaussian random SP fields.
   \param N Number of lattice points.
   \param L Box size.
   \param P The spectrum \f$ P \f$.
-  \return The generated GRF, as values on the lattice (of size \f$ 3 N^3 \f$).
+  \return The generated GRF, as complex values on the lattice (of size \f$ 3 N^3 \f$).
 
-  Generate 3 Gaussian random fields \f$ [A_x, A_y, A_z] \f$, such that the spectrum of \f$ A_i \f$ is \f$ P \f$.
+  Generate 3 Gaussian random fields \f$ [\psi_1, \psi_2, \psi_3] \f$, such that the spectrum of \f$ \psi_i \f$ is \f$ P \f$.
 */
-Eigen::VectorXd generate_gaussian_random_sp_field(const long long int N, const double L, const Spectrum &P);
+Eigen::ArrayXcd generate_gaussian_random_sp_field(const long long int N, const double L, const Spectrum &P);
 
 
 /*! \brief Initialize a Schrodinger-Poisson field and its derivative from a white noise power spectrum with cutoff k_ast. */
@@ -31,14 +31,25 @@ inline auto unperturbed_sp_grf =
     const long long int lattice_size = param.N * param.N * param.N;
     
     Spectrum P_f = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.varphi_std_dev, param.k_ast, 0);
-    Spectrum P_dtf = to_deriv_spectrum(param.m, P_f);
-    
+
     // The code is CPU only
     auto &state = workspace.state;
-    state.resize(6 * lattice_size);
-    state.segment(0, 3 * lattice_size) = generate_gaussian_random_proca_field(param.N, param.L, P_f);
-    state.segment(3 * lattice_size, 3 * lattice_size) = generate_gaussian_random_proca_field(param.N, param.L, P_dtf);
+    state = generate_gaussian_random_sp_field(param.N, param.L, P_f);
+
+    workspace.Psi.resize(lattice_size);
+    workspace.Psi.array() = 0;
+  };
+
+/*! \brief Initialize a Schrodinger-Poisson field and its derivative from a white noise power spectrum with cutoff k_ast. */
+inline auto perturbed_sp_grf =
+  [](const auto param, auto &workspace) {
+    const long long int lattice_size = param.N * param.N * param.N;
     
+    Spectrum P_f = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.varphi_std_dev, param.k_ast, 0);
+
+    // The code is CPU only
+    auto &state = workspace.state;
+    state = generate_gaussian_random_sp_field(param.N, param.L, P_f);
   };
 
 
@@ -46,9 +57,9 @@ inline auto unperturbed_sp_grf =
   \brief The SchrodingerPoisson equation, \f$ \ddot{\varphi} - \nabla^2 \varphi + m^2 \vec{A} = 0 \f$.
 */
 struct SchrodingerPoissonEquation {
-  typedef Eigen::VectorXcd Vector;
-  typedef Vector State;
-  typedef WorkspaceGeneric<State> Workspace;
+  typedef Eigen::ArrayXcd State;
+  typedef Eigen::VectorXd Vector;
+  typedef WorkspaceGeneric<Vector, State> Workspace;
   Workspace &workspace;
   
   SchrodingerPoissonEquation(Workspace &workspace_) : workspace(workspace_) {}
@@ -62,14 +73,6 @@ struct SchrodingerPoissonEquation {
   void operator()(const State &, State &, const double);
 
 
-  /*!
-    \brief Compute the time component of the Proca field from the workspace.
-    \param[in] workspace The workspace for evaluating the energy density.
-    \param t The current time parameter.
-    \return A vector of size \f$ N^3 \f$.
-  */
-  static Vector compute_At(Workspace &workspace, const double t);
-    
   /*!
     \brief Compute the energy density profile from the workspace.
     \param[in] workspace The workspace for evaluating the energy density.

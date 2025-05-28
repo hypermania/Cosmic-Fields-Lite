@@ -15,4 +15,6 @@ Eigen::VectorXd boost_klein_gordon_field(const long long int N, const double L, 
 
 Eigen::VectorXd boost_proca_field(const long long int N, const double L, const double m, const Eigen::VectorXd &tau, const Eigen::VectorXd &state_init, const double abs_delta_t);
 
+Eigen::ArrayXcd boost_sp_field(const long long int N, const double L, const double m, const Eigen::ArrayXd &tau, const Eigen::ArrayXcd &state_init);
+
 #endif

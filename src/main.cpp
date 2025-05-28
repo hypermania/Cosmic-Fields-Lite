@@ -25,6 +25,7 @@
 #include "wkb.hpp"
 #include "field_booster.hpp"
 #include "proca.hpp"
+#include "sp.hpp"
 
 #ifndef DISABLE_CUDA
 #include <thrust/device_vector.h>
@@ -84,7 +85,8 @@ int main(int argc, char **argv){
 
   // generate_ic_kg();
   // generate_ic_proca();
-  check_proca_q();
+  // check_proca_q();
+  generate_ic_sp();
 }  
 
 void generate_ic_kg(void)
@@ -541,7 +543,7 @@ void generate_ic_sp(void)
   MyParam param
     {
       .N = 384, // Lattice points per axis
-      .L = 25.13274122871835, // Size of the box
+      .L = 25.132741228718345908, // Size of the box
       // ULDM params
       .m = 1e2, // Mass of scalar field
       .lambda = 0, // Lambda phi^4 coupling strength
@@ -567,7 +569,7 @@ void generate_ic_sp(void)
   save_param_for_Mathematica(param, dir);
 
   
-  typedef ProcaEquation Equation;
+  typedef SchrodingerPoissonEquation Equation;
   typedef typename Equation::Workspace Workspace;
   typedef typename Equation::State State;
 
@@ -582,25 +584,41 @@ void generate_ic_sp(void)
   //   }
   // }
 
-
-
   // auto proca_initializer = [](const auto param, auto &workspace) {
   //   const long long int N = param.N;
   //   const long long int lattice_size = N*N*N;
   //   workspace.state = Eigen::VectorXd::Zero(6 * lattice_size);
   // };
-  
-  Workspace workspace(param, unperturbed_proca_grf);
 
-  Eigen::VectorXd tau;
+  Workspace workspace(param, unperturbed_sp_grf);
   {
-    Spectrum P_delta_dot = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
-    Eigen::VectorXd delta_dot = generate_gaussian_random_field(param.N, param.L, P_delta_dot);
-    tau = compute_inverse_laplacian(param.N, param.L, delta_dot, workspace.fft_wrapper);
-    std::cout << "max tau = " << tau.maxCoeff() << std::endl;
-    std::cout << "min tau = " << tau.minCoeff() << std::endl;
+    Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, param.t_start);
+    write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum_old.dat");
+    write_to_file(rho_old, dir + "rho_old.dat");
   }
-  write_to_file(tau, dir + "tau.dat");
+  {
+    Eigen::VectorXd q_old = Equation::compute_momentum_density(workspace, param.t_start);
+    const long long int field_size = N*N*N;
+    Eigen::VectorXd q_spectrum(3*(N/2)*(N/2)+1);
+    q_spectrum.array() = 0;
+    for(size_t idx = 0; idx < 3; ++idx){
+      Eigen::VectorXd q_idx = q_old.segment(idx * field_size, field_size);
+      q_spectrum += compute_power_spectrum(N, q_idx, workspace.fft_wrapper);
+    }
+    write_to_file(q_spectrum, dir + "q_spectrum_old.dat");
+    write_to_file(q_old, dir + "q_old.dat");
+  }
+
+  
+  // Eigen::VectorXd tau;
+  // {
+  //   Spectrum P_delta_dot = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.Psi_std_dev, param.k_Psi, -3);
+  //   Eigen::VectorXd delta_dot = generate_gaussian_random_field(param.N, param.L, P_delta_dot);
+  //   tau = compute_inverse_laplacian(param.N, param.L, delta_dot, workspace.fft_wrapper);
+  //   std::cout << "max tau = " << tau.maxCoeff() << std::endl;
+  //   std::cout << "min tau = " << tau.minCoeff() << std::endl;
+  // }
+  // write_to_file(tau, dir + "tau.dat");
 
 }
 

@@ -55,9 +55,10 @@ concept HasPsiApproximationParameters = requires (Param param)
   The initializer then use the `param` and its own logic to fill in the workspace. (e.g. initial conditions, curvature perturbations)
   Note that the `Vector`'s in the workspace are initially empty, and they need to be resized (via `vec.resize()`) to be written to.
 */
-template<typename Vector>
+template<typename VectorType, typename StateType = VectorType>
 struct WorkspaceGeneric {
-  typedef Vector State;
+  typedef StateType State;
+  typedef VectorType Vector;
   long long int N; /*!< Number of lattice points. */
   double L; /*!< Box size. */
   double m; /*!< Mass of field. */

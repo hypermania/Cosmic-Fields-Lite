@@ -68,7 +68,8 @@ template<typename Equation,
 struct ConstIntervalObserver {
   typedef typename Equation::Workspace Workspace;
   typedef typename Workspace::State State;
-  typedef State Vector;
+  typedef typename Workspace::Vector Vector;
+  // State Vector;
   Workspace &workspace;
   int idx;
   std::string dir;

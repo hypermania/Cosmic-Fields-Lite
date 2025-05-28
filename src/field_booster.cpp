@@ -319,3 +319,18 @@ Eigen::VectorXd boost_proca_field(const long long int N, const double L, const d
   
   return state_new;
 }
+
+Eigen::ArrayXcd boost_sp_field(const long long int N, const double L, const double m, const Eigen::ArrayXd &tau, const Eigen::ArrayXcd &state_init)
+{
+  const long long int lattice_size = N*N*N;
+  Eigen::ArrayXcd state_new(state_init.size());
+  
+  Eigen::ArrayXcd rotation(lattice_size);
+  rotation = exp(std::complex<double>(0, -1) * m * tau);
+  
+  state_new.segment(0 * lattice_size, lattice_size) = rotation * state_init.segment(0 * lattice_size, lattice_size);
+  state_new.segment(1 * lattice_size, lattice_size) = rotation * state_init.segment(1 * lattice_size, lattice_size);
+  state_new.segment(2 * lattice_size, lattice_size) = rotation * state_init.segment(2 * lattice_size, lattice_size);
+
+  return state_new;
+}

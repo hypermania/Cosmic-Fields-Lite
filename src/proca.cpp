@@ -138,7 +138,6 @@ ProcaEquation::Vector ProcaEquation::compute_At(Workspace &workspace, const doub
 }
 
 
-// TODO
 ProcaEquation::Vector ProcaEquation::compute_energy_density(Workspace &workspace, const double t)
 {
   using namespace Eigen;
@@ -190,7 +189,6 @@ ProcaEquation::Vector ProcaEquation::compute_energy_density(Workspace &workspace
 }
 
 
-// TODO
 ProcaEquation::Vector ProcaEquation::compute_momentum_density(Workspace &workspace, const double t)
 {
   using namespace Eigen;
