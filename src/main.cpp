@@ -548,7 +548,7 @@ void generate_ic_sp(void)
       .m = 1e2, // Mass of scalar field
       .lambda = 0, // Lambda phi^4 coupling strength
       //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
-      .k_ast = 4.0, // Characteristic momentum
+      .k_ast = 8.0, // Characteristic momentum
       .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
       .varphi_std_dev = 1.0, // Standard deviation of field
       .Psi_std_dev = 0.1, // Standard deviation of metric perturbation Psi
@@ -575,22 +575,32 @@ void generate_ic_sp(void)
 
   const long long int N = param.N;
   
-  // Eigen::VectorXd tau(N*N*N);
-  // for(int a = 0; a < N; ++a){
-  //   for(int b = 0; b < N; ++b){
-  //     for(int c = 0; c < N; ++c){
-  // 	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * std::numbers::pi * c / N);
-  //     }
-  //   }
-  // }
+  Workspace workspace(param, matter_dominated_sp_grf);
 
-  // auto proca_initializer = [](const auto param, auto &workspace) {
-  //   const long long int N = param.N;
-  //   const long long int lattice_size = N*N*N;
-  //   workspace.state = Eigen::VectorXd::Zero(6 * lattice_size);
-  // };
+  
+  {
+    const long long int lattice_size = N*N*N;
+    Eigen::VectorXd psi_1_re(lattice_size);
+    Eigen::VectorXd psi_1_im(lattice_size);
+    Eigen::VectorXd psi_2_re(lattice_size);
+    Eigen::VectorXd psi_2_im(lattice_size);
+    Eigen::VectorXd psi_3_re(lattice_size);
+    Eigen::VectorXd psi_3_im(lattice_size);
+    psi_1_re = workspace.state.segment(0, lattice_size).real();
+    psi_1_im = workspace.state.segment(0, lattice_size).imag();
+    psi_2_re = workspace.state.segment(0, lattice_size).real();
+    psi_2_im = workspace.state.segment(0, lattice_size).imag();
+    psi_3_re = workspace.state.segment(0, lattice_size).real();
+    psi_3_im = workspace.state.segment(0, lattice_size).imag();
 
-  Workspace workspace(param, unperturbed_sp_grf);
+    Eigen::VectorXd spectrum = compute_power_spectrum(N, psi_1_re, workspace.fft_wrapper);
+    spectrum += compute_power_spectrum(N, psi_1_im, workspace.fft_wrapper);
+    spectrum += compute_power_spectrum(N, psi_2_re, workspace.fft_wrapper);
+    spectrum += compute_power_spectrum(N, psi_2_im, workspace.fft_wrapper);
+    spectrum += compute_power_spectrum(N, psi_3_re, workspace.fft_wrapper);
+    spectrum += compute_power_spectrum(N, psi_3_im, workspace.fft_wrapper);
+    write_to_file(spectrum, dir + "varphi_spectrum_old.dat");
+  }
   {
     Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, param.t_start);
     write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum_old.dat");
@@ -607,6 +617,60 @@ void generate_ic_sp(void)
     }
     write_to_file(q_spectrum, dir + "q_spectrum_old.dat");
     write_to_file(q_old, dir + "q_old.dat");
+  }
+
+  
+  // Eigen::VectorXd tau(N*N*N);
+  // for(int a = 0; a < N; ++a){
+  //   for(int b = 0; b < N; ++b){
+  //     for(int c = 0; c < N; ++c){
+  // 	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * 2 * std::numbers::pi * c / N) * 0.05;
+  //     }
+  //   }
+  // }
+  // workspace.state = boost_sp_field(param.N, param.L, param.m, tau, workspace.state);
+  
+  workspace.state = boost_sp_field(param.N, param.L, param.m, workspace.Psi, workspace.state);
+  
+  {
+    const long long int lattice_size = N*N*N;
+    Eigen::VectorXd psi_1_re(lattice_size);
+    Eigen::VectorXd psi_1_im(lattice_size);
+    Eigen::VectorXd psi_2_re(lattice_size);
+    Eigen::VectorXd psi_2_im(lattice_size);
+    Eigen::VectorXd psi_3_re(lattice_size);
+    Eigen::VectorXd psi_3_im(lattice_size);
+    psi_1_re = workspace.state.segment(0, lattice_size).real();
+    psi_1_im = workspace.state.segment(0, lattice_size).imag();
+    psi_2_re = workspace.state.segment(0, lattice_size).real();
+    psi_2_im = workspace.state.segment(0, lattice_size).imag();
+    psi_3_re = workspace.state.segment(0, lattice_size).real();
+    psi_3_im = workspace.state.segment(0, lattice_size).imag();
+
+    Eigen::VectorXd spectrum = compute_power_spectrum(N, psi_1_re, workspace.fft_wrapper);
+    spectrum += compute_power_spectrum(N, psi_1_im, workspace.fft_wrapper);
+    spectrum += compute_power_spectrum(N, psi_2_re, workspace.fft_wrapper);
+    spectrum += compute_power_spectrum(N, psi_2_im, workspace.fft_wrapper);
+    spectrum += compute_power_spectrum(N, psi_3_re, workspace.fft_wrapper);
+    spectrum += compute_power_spectrum(N, psi_3_im, workspace.fft_wrapper);
+    write_to_file(spectrum, dir + "varphi_spectrum.dat");
+  }
+  {
+    Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, param.t_start);
+    write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum.dat");
+    write_to_file(rho_old, dir + "rho.dat");
+  }
+  {
+    Eigen::VectorXd q_old = Equation::compute_momentum_density(workspace, param.t_start);
+    const long long int field_size = N*N*N;
+    Eigen::VectorXd q_spectrum(3*(N/2)*(N/2)+1);
+    q_spectrum.array() = 0;
+    for(size_t idx = 0; idx < 3; ++idx){
+      Eigen::VectorXd q_idx = q_old.segment(idx * field_size, field_size);
+      q_spectrum += compute_power_spectrum(N, q_idx, workspace.fft_wrapper);
+    }
+    write_to_file(q_spectrum, dir + "q_spectrum.dat");
+    write_to_file(q_old, dir + "q.dat");
   }
 
   
