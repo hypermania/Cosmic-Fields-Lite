@@ -534,7 +534,8 @@ void generate_ic_sp(void)
   
   // Set the directory for output.
   // const std::string dir = "output/SP_IC/";
-  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/SP_IC/";
+  // const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/SP_IC/";
+  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/SP_infalling_IC/";
   prepare_directory_for_output(dir);
 
   
@@ -575,8 +576,8 @@ void generate_ic_sp(void)
 
   const long long int N = param.N;
   
-  Workspace workspace(param, matter_dominated_sp_grf);
-
+  // Workspace workspace(param, matter_dominated_sp_grf);
+  Workspace workspace(param, infalling_sp_grf);
   
   {
     const long long int lattice_size = N*N*N;
@@ -630,7 +631,7 @@ void generate_ic_sp(void)
   // }
   // workspace.state = boost_sp_field(param.N, param.L, param.m, tau, workspace.state);
   
-  workspace.state = boost_sp_field(param.N, param.L, param.m, workspace.Psi, workspace.state);
+  workspace.state = boost_sp_field(param.N, param.L, param.m, workspace.tau, workspace.state);
   
   {
     const long long int lattice_size = N*N*N;

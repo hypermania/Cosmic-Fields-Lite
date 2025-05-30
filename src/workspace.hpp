@@ -71,6 +71,7 @@ struct WorkspaceGeneric {
   Vector Psi_fft;
   Vector dPsidt_fft;
   Vector R_fft; /*!< Usually used to store comoving curvature perturbations. */
+  Vector tau;
   std::vector<double> t_list; /*!< The list of coordinate times at which a save is stored. */
   typename fftWrapperDispatcher<Vector>::Generic fft_wrapper; /*!< A FFT wrapper for 3D lattice with size \f$ N \f$. */
 
