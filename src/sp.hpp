@@ -94,23 +94,25 @@ inline auto matter_dominated_sp_grf =
       Eigen::VectorXd delta = compute_field_with_scaled_fourier_modes(N, L, R, delta_kernel, fft_wrapper);
       half_f = 0.5 * (delta + Phi);
       workspace.Psi = Phi; // Check if this is correct.
+      std::cout << "delta.norm() = " << delta.norm() << '\n';
+      std::cout << "Phi.norm() = " << Phi.norm() << '\n';
+      std::cout << "half_f.norm() = " << half_f.norm() << '\n';
     }
-    std::cout << "half_f : " << half_f.head(16).transpose() << std::endl;
     {
       // Eigen::VectorXd tau_RHS = pow(a1, 2) * (dot_delta - 3 * dot_Phi);
       Eigen::VectorXd dot_delta = compute_field_with_scaled_fourier_modes(N, L, R, dot_delta_kernel, fft_wrapper);
       Eigen::VectorXd tau_RHS = pow(a1, 2) * dot_delta;
       workspace.tau = compute_inverse_laplacian(N, L, tau_RHS, fft_wrapper);
+      std::cout << "tau.norm() = " << workspace.tau.norm() << '\n';
     }
-    std::cout << "half_f.norm() = " << half_f.norm() << '\n';
-    std::cout << "tau.norm() = " << workspace.tau.norm() << '\n';
+
     
     // The code is CPU only
     auto &state = workspace.state;
     Spectrum P_psi = power_law_with_cutoff_given_amplitude_3d(N, L, param.varphi_std_dev, param.k_ast, 0);
     state = generate_inhomogeneous_gaussian_random_sp_field(N, L, half_f, P_psi);
 
-    std::cout << "state : " << state.abs2().head(16).transpose() << std::endl;
+    // std::cout << "state : " << state.abs2().head(16).transpose() << std::endl;
 
   };
 
@@ -133,13 +135,15 @@ inline auto infalling_sp_grf =
 	  for(int c = 0; c < N; ++c){
 	    double dist_sqr = pow(L/N, 2) * ((a - N/2) * (a - N/2) + (b - N/2) * (b - N/2) + (c - N/2) * (c - N/2));
 	    double sigma = L / 4;
-	    dot_delta(IDX_OF(N, a, b, c)) = 10 * exp(- dist_sqr / (2 * sigma * sigma));
+	    dot_delta(IDX_OF(N, a, b, c)) = 3e-6 * exp(- dist_sqr / (2 * sigma * sigma));
 	  }
 	}
       }
       Eigen::VectorXd tau_RHS = pow(a1, 2) * dot_delta;
       workspace.tau = compute_inverse_laplacian(N, L, tau_RHS, fft_wrapper);
       std::cout << "tau.norm() = " << workspace.tau.norm() << std::endl;
+      std::cout << "dot_delta.norm() = " << dot_delta.norm() << std::endl;
+      std::cout << "tau_RHS.norm() = " << tau_RHS.norm() << std::endl;
     }
     workspace.Psi = Eigen::VectorXd::Constant(lattice_size, 0);
     
