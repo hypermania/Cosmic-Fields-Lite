@@ -289,6 +289,115 @@ Eigen::VectorXd boost_klein_gordon_field(const long long int N, const double L, 
 }
 
 // TODO
+void scan_and_set_proca(const long long int N, const double L, const double m, const Eigen::VectorXd &tau, Eigen::VectorXd &state_init, double t, const double delta_t)
+{
+  // Design decisions:
+  // 1. Don't implement an actual operator() for Proca, just use KleinGordonEquation on each A_i component
+  // 2. Store the full field A_t, A_i's for two times
+  // 3. Compute A_t after evolving A_i's
+  // 4. Using KleinGordonEquation don't need a workspace. We can create and destruct the eqn as we go.
+  // 5. We will need only one scratch state for the KG stepper to act on.
+  // 6. Start with cubic interpolation.
+  
+  using namespace boost::numeric::odeint;
+  using namespace boost::math::interpolators;
+      
+  auto empty_initializer = [&](const auto param, auto &workspace) {};
+  auto interpolant_at_pos =
+    [N](const double t_0, const double t_1,
+	const Eigen::VectorXd &state_0, const Eigen::VectorXd &state_1,
+	const Eigen::VectorXd &dt_state_0, const Eigen::VectorXd &dt_state_1,
+	const int a, const int b, const int c) {
+      const int idx = IDX_OF(N, a, b, c);
+      quintic_hermite<std::array<double, 2>>
+	interpolant(std::array<double, 2>({t_0, t_1}),
+		    std::array<double, 2>({state_0(idx), state_1(idx)}),
+		    std::array<double, 2>({dt_state_0(idx), dt_state_1(idx)}),
+		    std::array<double, 2>({dt_state_0(N*N*N + idx), dt_state_1(N*N*N + idx)}) );
+      return interpolant;
+    };
+
+
+  const double h = L / N;
+  const long long int field_size = N*N*N;
+  const long long int state_size = state_init.size(); // 6 * field_size
+
+  const double t_max = tau.maxCoeff();
+  const double t_min = tau.minCoeff();
+  std::cout << "t_max = " << t_max << '\n';
+  std::cout << "t_min = " << t_min << '\n';
+      
+  Eigen::VectorXd state_next(state_size);
+  Eigen::VectorXd kg_state(2 * field_size);
+
+  typedef KleinGordonEquation Equation;
+  typedef typename Equation::Workspace Workspace;
+  typedef typename Equation::State State;
+      
+  KGParam param = KGParam({N, L, m});
+  Workspace workspace(param, empty_initializer);
+  Equation eqn(workspace);
+
+  // Loop in one direction
+  while(t_min < t && t < t_max) {
+    // Evolve to set state_next
+    std::cout << "t = " << t << '\n';
+    {
+      auto stepper = runge_kutta4<State, double, State, double>();
+
+      auto evolve_component = [&](const long long int i)->void {
+	kg_state.segment(0, field_size) = state_init.segment(i * field_size, field_size);
+	kg_state.segment(field_size, field_size) = state_init.segment((3+i) * field_size, field_size);
+	stepper.do_step(eqn, kg_state, t, delta_t);
+	state_next.segment(i * field_size, field_size) = kg_state.segment(0, field_size);
+	state_next.segment((3+i) * field_size, field_size) = kg_state.segment(field_size, field_size);
+      };
+      evolve_component(0);
+      evolve_component(1);
+      evolve_component(2);
+    }
+	
+    // Set new initial conditions by interpolation
+    // const double t0 = std::min(t, t + delta_t);
+    // const double t1 = std::max(t, t + delta_t);
+    // const Eigen::VectorXd &state0 = (delta_t > 0) ? state_last : state_cur;
+    // const Eigen::VectorXd &state1 = (delta_t > 0) ? state_cur : state_last;
+    // const Eigen::VectorXd &dt_state0 = (delta_t > 0) ? dt_state_last : dt_state_cur;
+    // const Eigen::VectorXd &dt_state1 = (delta_t > 0) ? dt_state_cur : dt_state_last;
+    // for(int a = 0; a < N; ++a){
+    //   for(int b = 0; b < N; ++b){
+    // 	for(int c = 0; c < N; ++c){
+    // 	  const int idx = IDX_OF(N, a, b, c);
+    // 	  const double t_eval = tau(idx);
+    // 	  if(t0 <= t_eval && t_eval <= t1) {
+    // 	    auto center_interpolant = interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, a, b, c);
+	    
+    // 	    const double delta_varphi_x = interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, (a+1)%N, b, c)(t_eval) - interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, (a+N-1)%N, b, c)(t_eval);
+    // 	    const double delta_varphi_y = interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, a, (b+1)%N, c)(t_eval) - interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, a, (b+N-1)%N, c)(t_eval);
+    // 	    const double delta_varphi_z = interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, a, b, (c+1)%N)(t_eval) - interpolant_at_pos(t0, t1, state0, state1, dt_state0, dt_state1, a, b, (c+N-1)%N)(t_eval);
+
+    // 	    const double delta_tau_x = tau(IDX_OF(N, (a+1)%N, b, c)) - tau(IDX_OF(N, (a+N-1)%N, b, c));
+    // 	    const double delta_tau_y = tau(IDX_OF(N, a, (b+1)%N, c)) - tau(IDX_OF(N, a, (b+N-1)%N, c));
+    // 	    const double delta_tau_z = tau(IDX_OF(N, a, b, (c+1)%N)) - tau(IDX_OF(N, a, b, (c+N-1)%N));
+	    
+    // 	    const double varphi_new = center_interpolant(t_eval);
+    // 	    const double dt_varphi_new = center_interpolant.prime(t_eval)
+    // 	      + (delta_varphi_x * delta_tau_x + delta_varphi_y * delta_tau_y + delta_varphi_z * delta_tau_z) / (4 * h * h);
+    // 	    state_new(idx) = varphi_new;
+    // 	    state_new(N*N*N + idx) = dt_varphi_new;
+    // 	  }
+    // 	}
+    //   }
+    // }
+
+    // Prepare for next time step
+    // state_last = state_cur;
+    // dt_state_last.swap(dt_state_cur);
+    t += delta_t;
+  }
+}
+
+// TODO
 Eigen::VectorXd boost_proca_field(const long long int N, const double L, const double m, const Eigen::VectorXd &tau, const Eigen::VectorXd &state_init, const double abs_delta_t)
 {
   // The current scheme is problematic, because we are missing A_0 contribution to the boost of A_i's
