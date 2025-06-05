@@ -84,9 +84,9 @@ int main(int argc, char **argv){
   //generate_wkb_solutions();
 
   // generate_ic_kg();
-  // generate_ic_proca();
+  generate_ic_proca();
   // check_proca_q();
-  generate_ic_sp();
+  // generate_ic_sp();
 }  
 
 void generate_ic_kg(void)
@@ -257,8 +257,8 @@ void generate_ic_proca(void)
 
   
   // Set the directory for output.
-  // const std::string dir = "output/proca_IC/";
-  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
+  const std::string dir = "output/proca_IC/";
+  // const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
   prepare_directory_for_output(dir);
 
   
@@ -373,7 +373,8 @@ void generate_ic_proca(void)
     write_to_file(q_old, dir + "q_old.dat");
   }
 
-  workspace.state = boost_proca_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
+  // workspace.state = boost_proca_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
+  workspace.state = boost_proca_field(param.N, param.L, param.m, tau, workspace.state, 0.01, dir + "state_scratch.dat");
 
   {
     Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
