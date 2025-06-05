@@ -257,8 +257,8 @@ void generate_ic_proca(void)
 
   
   // Set the directory for output.
-  const std::string dir = "output/proca_IC/";
-  // const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
+  // const std::string dir = "output/proca_IC/";
+  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
   prepare_directory_for_output(dir);
 
   
