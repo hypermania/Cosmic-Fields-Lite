@@ -187,7 +187,7 @@ void boost_klein_gordon_field_old(Eigen::VectorXd &varphi, Eigen::VectorXd &dt_v
   dt_varphi = dt_varphi_new;
 }
 
-void scan_and_set_with_klein_gordon(const long long int N, const double L, const double m, const Eigen::VectorXd &tau, const Eigen::VectorXd &state_init, double t, const double delta_t, Eigen::VectorXd &state_new)
+void scan_and_set_klein_gordon(const long long int N, const double L, const double m, const Eigen::VectorXd &tau, const Eigen::VectorXd &state_init, double t, const double delta_t, Eigen::VectorXd &state_new)
 {
   using namespace boost::numeric::odeint;
   using namespace boost::math::interpolators;
@@ -283,13 +283,19 @@ void scan_and_set_with_klein_gordon(const long long int N, const double L, const
 Eigen::VectorXd boost_klein_gordon_field(const long long int N, const double L, const double m, const Eigen::VectorXd &tau, const Eigen::VectorXd &state_init, const double abs_delta_t)
 {
   Eigen::VectorXd state_new(state_init.size());
-  scan_and_set_with_klein_gordon(N, L, m, tau, state_init, 0, abs_delta_t, state_new);
-  scan_and_set_with_klein_gordon(N, L, m, tau, state_init, 0, -abs_delta_t, state_new);
+  scan_and_set_klein_gordon(N, L, m, tau, state_init, 0, abs_delta_t, state_new);
+  scan_and_set_klein_gordon(N, L, m, tau, state_init, 0, -abs_delta_t, state_new);
   return state_new;
 }
 
+// TODO
 Eigen::VectorXd boost_proca_field(const long long int N, const double L, const double m, const Eigen::VectorXd &tau, const Eigen::VectorXd &state_init, const double abs_delta_t)
 {
+  // The current scheme is problematic, because we are missing A_0 contribution to the boost of A_i's
+  // To modify this, we need to:
+  // Evolve the field by one time step, obtain field's A_i's for t_0 and t_1
+  // Compute A_0 at times t_0 and t_1
+  // At (\tau(\bx), \bx) such that t_0 <= \tau < t_1, interpolate A_0 and A_i's, and set the boosted field
   Eigen::VectorXd state_new(state_init.size());
 
   const long long int lattice_size = N*N*N;
@@ -298,22 +304,22 @@ Eigen::VectorXd boost_proca_field(const long long int N, const double L, const d
 
   component_init.segment(0, lattice_size) = state_init.segment(0, lattice_size);
   component_init.segment(lattice_size, lattice_size) = state_init.segment(3 * lattice_size, lattice_size);
-  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, abs_delta_t, component_new);
-  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, -abs_delta_t, component_new);
+  scan_and_set_klein_gordon(N, L, m, tau, component_init, 0, abs_delta_t, component_new);
+  scan_and_set_klein_gordon(N, L, m, tau, component_init, 0, -abs_delta_t, component_new);
   state_new.segment(0, lattice_size) = component_new.segment(0, lattice_size);
   state_new.segment(3 * lattice_size, lattice_size) = component_new.segment(lattice_size, lattice_size);
 
   component_init.segment(0, lattice_size) = state_init.segment(lattice_size, lattice_size);
   component_init.segment(lattice_size, lattice_size) = state_init.segment(4 * lattice_size, lattice_size);
-  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, abs_delta_t, component_new);
-  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, -abs_delta_t, component_new);
+  scan_and_set_klein_gordon(N, L, m, tau, component_init, 0, abs_delta_t, component_new);
+  scan_and_set_klein_gordon(N, L, m, tau, component_init, 0, -abs_delta_t, component_new);
   state_new.segment(lattice_size, lattice_size) = component_new.segment(0, lattice_size);
   state_new.segment(4 * lattice_size, lattice_size) = component_new.segment(lattice_size, lattice_size);
 
   component_init.segment(0, lattice_size) = state_init.segment(2 * lattice_size, lattice_size);
   component_init.segment(lattice_size, lattice_size) = state_init.segment(5 * lattice_size, lattice_size);
-  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, abs_delta_t, component_new);
-  scan_and_set_with_klein_gordon(N, L, m, tau, component_init, 0, -abs_delta_t, component_new);
+  scan_and_set_klein_gordon(N, L, m, tau, component_init, 0, abs_delta_t, component_new);
+  scan_and_set_klein_gordon(N, L, m, tau, component_init, 0, -abs_delta_t, component_new);
   state_new.segment(2 * lattice_size, lattice_size) = component_new.segment(0, lattice_size);
   state_new.segment(5 * lattice_size, lattice_size) = component_new.segment(lattice_size, lattice_size);
   

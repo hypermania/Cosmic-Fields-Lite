@@ -534,29 +534,57 @@ void generate_ic_sp(void)
   
   // Set the directory for output.
   // const std::string dir = "output/SP_infalling_IC/";
-  const std::string dir = "output/SP_IC/";
-  // const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/SP_IC/";
+  // const std::string dir = "output/SP_IC/";
+  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/SP_IC/";
   // const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/SP_infalling_IC/";
   prepare_directory_for_output(dir);
 
   
   // Set parameters for the simulation.
   // We use units in which a_eq = 1, H_eq = 1.
+  // MyParam param
+  //   {
+  //     .N = 384, // Lattice points per axis
+  //     .L = 25.132741228718345908, // Size of the box
+  //     // ULDM params
+  //     .m = 1e1, // Mass of scalar field
+  //     .lambda = 0, // Lambda phi^4 coupling strength
+  //     //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
+  //     .k_ast = 16.0, // Characteristic momentum
+  //     .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
+  //     .varphi_std_dev = 1.0, // Standard deviation of field
+  //     .Psi_std_dev = 0.1, // Standard deviation of metric perturbation Psi
+  //     // FRW metric params
+  //     .a1 = 64.0,
+  //     .H1 = 1.0 / 512.0,
+  //     .t1 = 2.0 / (3 * param.H1),
+  //     // Start and end time for numerical integration, and time interval between saves
+  //     .t_start = param.t1,
+  //     .t_end = param.t_start + (pow(3.5 / param.a1, 2) - 1.0) / (2 * param.H1),
+  //     .t_interval = 49.99, // Save a snapshot every t_interval
+  //     // Numerical method parameter
+  //     .delta_t = 0.5, // Time step for numerical integration
+  //     // Psi approximation parameter
+  //     .M = 128 // Lattice points for storing / computing Psi
+  //   };
+
+  // Set parameters for the simulation.
+  // We use units in which a_eq = 1, H_eq = 1.
   MyParam param
     {
-      .N = 384, // Lattice points per axis
-      .L = 25.132741228718345908, // Size of the box
+      .N = 384,
+      .L = 12.566370614359172954,
       // ULDM params
-      .m = 1e2, // Mass of scalar field
-      .lambda = 0, // Lambda phi^4 coupling strength
-      //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
-      .k_ast = 8.0, // Characteristic momentum
-      .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
-      .varphi_std_dev = 1.0, // Standard deviation of field
-      .Psi_std_dev = 0.1, // Standard deviation of metric perturbation Psi
+      .m = 10.000000000000000000,
+      .lambda = 0,
+      //.f_a = 30.0,
+      .k_ast = 24.000000000000000000,
+      .k_Psi = 1.0,
+      .varphi_std_dev = 1.0,
+      .Psi_std_dev = 0.1,
       // FRW metric params
-      .a1 = 64.0,
-      .H1 = 1.0 / 512.0,
+      .a1 = 16.000000000000000000,
+      .H1 = pow(param.a1, -1.5),
       .t1 = 2.0 / (3 * param.H1),
       // Start and end time for numerical integration, and time interval between saves
       .t_start = param.t1,
@@ -565,7 +593,7 @@ void generate_ic_sp(void)
       // Numerical method parameter
       .delta_t = 0.5, // Time step for numerical integration
       // Psi approximation parameter
-      .M = 128 // Lattice points for storing / computing Psi
+      .M = 128
     };
   print_param(param);
   save_param_for_Mathematica(param, dir);
