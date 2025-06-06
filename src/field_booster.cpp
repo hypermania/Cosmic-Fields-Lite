@@ -133,8 +133,6 @@ void boost_klein_gordon_field_old(Eigen::VectorXd &varphi, Eigen::VectorXd &dt_v
   state_buffer.clear();
   dt_state_buffer.clear();
   
-  std::cout << "point 2\n";
-  
   // Solve the equation backward in time and set new initial conditions by interpolation
   workspace.state = make_state(varphi, dt_varphi);
   state_buffer.push_back(Eigen::VectorXd(workspace.state));
@@ -455,11 +453,43 @@ void scan_and_set_proca(const long long int N, const double L, const double m, c
       return std::array<double, 3>({grad_x, grad_y, grad_z});
     };
 
-    auto gradient_at_pos_2 = [&](auto field_func, const double t_eval, const int a, const int b, const int c) {
+    auto gradient_at_pos_time = [&](auto field_func, const double t_eval, const int a, const int b, const int c) {
       const double grad_x = (field_func(t_eval, (a+1)%N, b, c) - field_func(t_eval, (a+N-1)%N, b, c)) / (2 * h);
       const double grad_y = (field_func(t_eval, a, (b+1)%N, c) - field_func(t_eval, a, (b+N-1)%N, c)) / (2 * h);
       const double grad_z = (field_func(t_eval, a, b, (c+1)%N) - field_func(t_eval, a, b, (c+N-1)%N)) / (2 * h);
       return std::array<double, 3>({grad_x, grad_y, grad_z});
+    };
+
+    // const double A1_interpolated = A1_interpolant(t_eval, a, b, c);
+    // const double A2_interpolated = A2_interpolant(t_eval, a, b, c);
+    // const double A3_interpolated = A3_interpolant(t_eval, a, b, c);
+    // const double dt_A1_interpolated = dt_A1_interpolant(t_eval, a, b, c);
+    // const double dt_A2_interpolated = dt_A2_interpolant(t_eval, a, b, c);
+    // const double dt_A3_interpolated = dt_A3_interpolant(t_eval, a, b, c);
+
+    auto A10 = state0.segment(0 * field_size, field_size);
+    auto A20 = state0.segment(1 * field_size, field_size);
+    auto A30 = state0.segment(2 * field_size, field_size);
+    auto A11 = state1.segment(0 * field_size, field_size);
+    auto A21 = state1.segment(1 * field_size, field_size);
+    auto A31 = state1.segment(2 * field_size, field_size);
+    auto At_interpolant = [&](const double t_eval, const int a, const int b, const int c) {
+      const double div_A_0 =
+	(A10(IDX_OF(N, (a+1)%N, b, c)) - A10(IDX_OF(N, (a+N-1)%N, b, c))) / (2 * h)
+	+ (A20(IDX_OF(N, a, (b+1)%N, c)) - A20(IDX_OF(N, a, (b+N-1)%N, c))) / (2 * h)
+	+ (A30(IDX_OF(N, a, b, (c+1)%N)) - A30(IDX_OF(N, a, b, (c+N-1)%N))) / (2 * h);
+      const double div_A_1 =
+	(A11(IDX_OF(N, (a+1)%N, b, c)) - A11(IDX_OF(N, (a+N-1)%N, b, c))) / (2 * h)
+	+ (A21(IDX_OF(N, a, (b+1)%N, c)) - A21(IDX_OF(N, a, (b+N-1)%N, c))) / (2 * h)
+	+ (A31(IDX_OF(N, a, b, (c+1)%N)) - A31(IDX_OF(N, a, b, (c+N-1)%N))) / (2 * h);
+
+      const int idx = IDX_OF(N, a, b, c);
+      // const double t_eval = tau(idx);
+      cubic_hermite<std::array<double, 2>>
+	interpolant(std::array<double, 2>({t0, t1}),
+		    std::array<double, 2>({At0(idx), At1(idx)}),
+		    std::array<double, 2>({div_A_0, div_A_1}) );
+      return interpolant(t_eval);
     };
 
     
@@ -468,59 +498,21 @@ void scan_and_set_proca(const long long int N, const double L, const double m, c
 	for(int c = 0; c < N; ++c){
 	  const int idx = IDX_OF(N, a, b, c);
 	  const double t_eval = tau(idx);
-
 	  
 	  if(t0 <= t_eval && t_eval <= t1) {
 
-	    // const double A1_interpolated = A1_interpolant(t_eval, a, b, c);
-	    // const double A2_interpolated = A2_interpolant(t_eval, a, b, c);
-	    // const double A3_interpolated = A3_interpolant(t_eval, a, b, c);
-	    // const double dt_A1_interpolated = dt_A1_interpolant(t_eval, a, b, c);
-	    // const double dt_A2_interpolated = dt_A2_interpolant(t_eval, a, b, c);
-	    // const double dt_A3_interpolated = dt_A3_interpolant(t_eval, a, b, c);
-
-	    std::cout << "point 0\n";
-	    
-	    auto At_interpolant = [&](const int a, const int b, const int c) {
-	      auto A10 = state0.segment(0 * field_size, field_size);
-	      auto A20 = state0.segment(1 * field_size, field_size);
-	      auto A30 = state0.segment(2 * field_size, field_size);
-	      auto A11 = state1.segment(0 * field_size, field_size);
-	      auto A21 = state1.segment(1 * field_size, field_size);
-	      auto A31 = state1.segment(2 * field_size, field_size);
-	      const double div_A_0 =
-		(A10(IDX_OF(N, (a+1)%N, b, c)) - A10(IDX_OF(N, (a+N-1)%N, b, c))) / (2 * h)
-		+ (A20(IDX_OF(N, a, (b+1)%N, c)) - A20(IDX_OF(N, a, (b+N-1)%N, c))) / (2 * h)
-		+ (A30(IDX_OF(N, a, b, (c+1)%N)) - A30(IDX_OF(N, a, b, (c+N-1)%N))) / (2 * h);
-	      const double div_A_1 =
-		(A11(IDX_OF(N, (a+1)%N, b, c)) - A11(IDX_OF(N, (a+N-1)%N, b, c))) / (2 * h)
-		+ (A21(IDX_OF(N, a, (b+1)%N, c)) - A21(IDX_OF(N, a, (b+N-1)%N, c))) / (2 * h)
-		+ (A31(IDX_OF(N, a, b, (c+1)%N)) - A31(IDX_OF(N, a, b, (c+N-1)%N))) / (2 * h);
-
-	      // const int idx = IDX_OF(N, a, b, c);
-	      // const double t_eval = tau(idx);
-	      cubic_hermite<std::array<double, 2>>
-		interpolant(std::array<double, 2>({t0, t1}),
-			    std::array<double, 2>({At0(idx), At1(idx)}),
-			    std::array<double, 2>({div_A_0, div_A_1}) );
-	      return interpolant(t_eval);
-	    };
-
-	    std::cout << "point 1\n";
-	    
 	    auto grad_tau = gradient_at_pos(tau_func, a, b, c);
-	    auto grad_A1 = gradient_at_pos_2(A1_interpolant, t_eval, a, b, c);
-	    auto grad_A2 = gradient_at_pos_2(A2_interpolant, t_eval, a, b, c);
-	    auto grad_A3 = gradient_at_pos_2(A3_interpolant, t_eval, a, b, c);
+	    auto grad_A1 = gradient_at_pos_time(A1_interpolant, t_eval, a, b, c);
+	    auto grad_A2 = gradient_at_pos_time(A2_interpolant, t_eval, a, b, c);
+	    auto grad_A3 = gradient_at_pos_time(A3_interpolant, t_eval, a, b, c);
 	    auto div_A = grad_A1[0] + grad_A2[1] + grad_A3[2];
-	    const double At_interpolated = At_interpolant(a,b,c);
+	    const double At_interpolated = At_interpolant(t_eval,a,b,c);
 	    A1_new(idx) = A1_interpolant(t_eval,a,b,c) + grad_tau[0] * At_interpolated;
 	    A2_new(idx) = A2_interpolant(t_eval,a,b,c) + grad_tau[1] * At_interpolated;
 	    A3_new(idx) = A3_interpolant(t_eval,a,b,c) + grad_tau[2] * At_interpolated;
 	    dt_A1_new(idx) = dt_A1_interpolant(t_eval,a,b,c) + dot_product(grad_tau, grad_A1) + grad_tau[0] * div_A;
 	    dt_A2_new(idx) = dt_A2_interpolant(t_eval,a,b,c) + dot_product(grad_tau, grad_A2) + grad_tau[1] * div_A;
 	    dt_A3_new(idx) = dt_A3_interpolant(t_eval,a,b,c) + dot_product(grad_tau, grad_A3) + grad_tau[2] * div_A;
-	    std::cout << "point 2\n";
 		    
 	  }
 	}
@@ -574,10 +566,12 @@ Eigen::VectorXd boost_proca_field(const long long int N, const double L, const d
   const long long int lattice_size = N*N*N;  
   Eigen::VectorXd state_new(6 * lattice_size);
   
-  // write_to_file(state_init, save_path);
-  Eigen::VectorXd temp = state_init;
+  write_to_file(state_init, save_path);
+  // Eigen::VectorXd temp = state_init;
   scan_and_set_proca(N, L, m, tau, state_init, 0, abs_delta_t, state_new);
-  state_init.swap(temp);
+  Eigen::VectorXd().swap(state_init);
+  // state_init.swap(temp);
+  state_init = load_VectorXd_from_file(save_path);
   scan_and_set_proca(N, L, m, tau, state_init, 0, -abs_delta_t, state_new);
   
   return state_new;

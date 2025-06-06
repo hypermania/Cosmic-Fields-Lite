@@ -87,6 +87,19 @@ int main(int argc, char **argv){
   generate_ic_proca();
   // check_proca_q();
   // generate_ic_sp();
+
+  // Eigen::VectorXd v(10);
+  // Eigen::VectorXd w(10);
+  // v.array() = 100;
+  // w.array() = 200;
+  // std::cout << "v.size() = " << v.size() << std::endl;
+  // std::cout << "w.size() = " << w.size() << std::endl;
+  // Eigen::VectorXd().swap(v);
+  // std::cout << "v.size() = " << v.size() << std::endl;
+  // std::cout << "w.size() = " << w.size() << std::endl;
+  // v = w;
+  // std::cout << "v.size() = " << v.size() << std::endl;
+  // std::cout << "w.size() = " << w.size() << std::endl;
 }  
 
 void generate_ic_kg(void)
@@ -257,8 +270,8 @@ void generate_ic_proca(void)
 
   
   // Set the directory for output.
-  // const std::string dir = "output/proca_IC/";
-  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
+  const std::string dir = "output/proca_IC/";
+  // const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
   prepare_directory_for_output(dir);
 
   
