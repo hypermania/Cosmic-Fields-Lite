@@ -26,6 +26,7 @@
 #include "field_booster.hpp"
 #include "proca.hpp"
 #include "sp.hpp"
+#include "sine_gordon_1d.hpp"
 
 #ifndef DISABLE_CUDA
 #include <thrust/device_vector.h>
@@ -84,22 +85,15 @@ int main(int argc, char **argv){
   //generate_wkb_solutions();
 
   // generate_ic_kg();
-  generate_ic_proca();
+  // generate_ic_proca();
   // check_proca_q();
   // generate_ic_sp();
-
-  // Eigen::VectorXd v(10);
-  // Eigen::VectorXd w(10);
-  // v.array() = 100;
-  // w.array() = 200;
-  // std::cout << "v.size() = " << v.size() << std::endl;
-  // std::cout << "w.size() = " << w.size() << std::endl;
-  // Eigen::VectorXd().swap(v);
-  // std::cout << "v.size() = " << v.size() << std::endl;
-  // std::cout << "w.size() = " << w.size() << std::endl;
-  // v = w;
-  // std::cout << "v.size() = " << v.size() << std::endl;
-  // std::cout << "w.size() = " << w.size() << std::endl;
+  SineGordonParam param {
+    .N = 100,
+    .L = 10,
+    .v = 0
+  };
+  SineGordon1DEquation eqn(param);
 }  
 
 void generate_ic_kg(void)
