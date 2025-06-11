@@ -88,12 +88,59 @@ int main(int argc, char **argv){
   // generate_ic_proca();
   // check_proca_q();
   // generate_ic_sp();
+
+  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/sg_IC/";
+  prepare_directory_for_output(dir);
+  
+  using namespace Eigen;
+  using namespace std::numbers;
+  using namespace boost::numeric::odeint;
+  const double L = 100;
+  const double x0 = 50;
+  const long long int N = static_cast<long long int>(L / 0.01);
+  const double omega = 0.2;
+  
   SineGordonParam param {
-    .N = 100,
-    .L = 10,
+    .N = N,
+    .L = L,
     .v = 0
   };
-  SineGordon1DEquation eqn(param);
+  print_param(param);
+  save_param_for_Mathematica(param, dir);
+
+  
+  typedef SineGordon1DEquation Equation;
+  typedef SineGordon1DEquation::State State;
+  Equation eqn(param);
+  Equation::State state(2 * N);
+  
+  Equation::Vector xCoords = Eigen::ArrayXd::LinSpaced(N, 0, (L * (N - 1))  / N);
+  state(seqN(0, N)) = 0;
+  state(seqN(N, N)) = (4)*((pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000))*(1/cosh(((xCoords)+((-1)*(x0)))*(pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000)))));
+
+  auto rho = eqn.compute_energy_density(state, 0);
+  auto q = eqn.compute_momentum_density(state, 0);
+  write_to_file(state, dir + "state.dat");
+  write_to_file(rho, dir + "rho.dat");
+  write_to_file(q, dir + "q.dat");
+
+  typedef SineGordon1DBooster Booster;
+  Eigen::ArrayXd tau = 2 * sin(2 * pi * xCoords / L) * (L / (2 * pi));
+  Booster booster(param, tau);
+  
+  auto stepper = runge_kutta4_classic<State, double, State, double>();
+  // auto stepper = make_controlled(1e-9, 1e-9, runge_kutta_fehlberg78<State, double, State, double>());
+    
+  int num_steps = integrate_const(stepper, booster, state, 0.0, 1.0, 0.0001); //, observer);
+
+  rho = eqn.compute_energy_density(state, 0);
+  q = eqn.compute_momentum_density(state, 0);
+  write_to_file(state, dir + "state_boosted.dat");
+  write_to_file(rho, dir + "rho_boosted.dat");
+  write_to_file(q, dir + "q_boosted.dat");
+
+  write_to_file(tau, dir + "tau.dat");
+  write_to_file(xCoords, dir + "x_coords.dat");
 }  
 
 void generate_ic_kg(void)
