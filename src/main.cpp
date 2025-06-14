@@ -95,8 +95,9 @@ int main(int argc, char **argv){
   using namespace Eigen;
   using namespace std::numbers;
   using namespace boost::numeric::odeint;
-  const double L = 100;
-  const double x0 = 50;
+  const double L = 40;
+  const double x0 = 0.25 * L;
+  const double x1 = 0.75 * L;
   const long long int N = static_cast<long long int>(L / 0.01);
   const double omega = 0.2;
   
@@ -116,7 +117,12 @@ int main(int argc, char **argv){
   
   Equation::Vector xCoords = Eigen::ArrayXd::LinSpaced(N, 0, (L * (N - 1))  / N);
   state(seqN(0, N)) = 0;
-  state(seqN(N, N)) = (4)*((pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000))*(1/cosh(((xCoords)+((-1)*(x0)))*(pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000)))));
+  state(seqN(N, N)) = ((4)*((pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000))*(1/cosh(((xCoords)+((-1)*(x0)))*(pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000))))))+((4)*((pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000))*(1/cosh(((xCoords)+((-1)*(x1)))*(pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000))))));
+  
+  // const double k = 10 * 3.62;
+  // const long long int n = static_cast<long long int>(k * L / (2 * pi));
+  // state(seqN(0, N)) = 0.01 * cos(n * 2 * pi * xCoords / L);
+  // state(seqN(N, N)) = 0;
 
   auto rho = eqn.compute_energy_density(state, 0);
   auto q = eqn.compute_momentum_density(state, 0);
@@ -125,7 +131,7 @@ int main(int argc, char **argv){
   write_to_file(q, dir + "q.dat");
 
   typedef SineGordon1DBooster Booster;
-  Eigen::ArrayXd tau = 2 * sin(2 * pi * xCoords / L) * (L / (2 * pi));
+  Eigen::ArrayXd tau = -2 * cos(2 * pi * xCoords / L) * (L / (2 * pi));
   Booster booster(param, tau);
   
   auto stepper = runge_kutta4_classic<State, double, State, double>();
