@@ -131,7 +131,7 @@ int main(int argc, char **argv){
   write_to_file(q, dir + "q.dat");
 
   typedef SineGordon1DBooster Booster;
-  Eigen::ArrayXd tau = -2 * cos(2 * pi * xCoords / L) * (L / (2 * pi));
+  Eigen::ArrayXd tau = 2 * cos(2 * pi * xCoords / L) * (L / (2 * pi));
   Booster booster(param, tau);
   
   auto stepper = runge_kutta4_classic<State, double, State, double>();
