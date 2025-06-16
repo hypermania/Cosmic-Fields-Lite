@@ -102,6 +102,8 @@ inline auto matter_dominated_sp_grf =
       // Eigen::VectorXd tau_RHS = pow(a1, 2) * (dot_delta - 3 * dot_Phi);
       // Eigen::VectorXd dot_delta = compute_field_with_scaled_fourier_modes(N, L, R, dot_delta_kernel, fft_wrapper);
       // Eigen::VectorXd tau_RHS = pow(a1, 2) * dot_delta;
+      
+      // Here we ignore dot_Phi since it is negligible
       Eigen::VectorXd tau_RHS = pow(a1, 2) * compute_field_with_scaled_fourier_modes(N, L, R, dot_delta_kernel, fft_wrapper);
       workspace.tau = compute_inverse_laplacian(N, L, tau_RHS, fft_wrapper);
       std::cout << "tau.norm() = " << workspace.tau.norm() << '\n';

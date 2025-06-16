@@ -72,6 +72,7 @@ void generate_wkb_solutions(void);
 void generate_ic_kg(void);
 void generate_ic_proca(void);
 void generate_ic_sp(void);
+void generate_ic_sg(void);
 void check_proca_q(void);
 
 int main(int argc, char **argv){
@@ -88,7 +89,11 @@ int main(int argc, char **argv){
   // generate_ic_proca();
   // check_proca_q();
   // generate_ic_sp();
+  generate_ic_sg();
+}  
 
+void generate_ic_sg(void)
+{
   const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/sg_IC/";
   prepare_directory_for_output(dir);
   
@@ -123,12 +128,33 @@ int main(int argc, char **argv){
   // const long long int n = static_cast<long long int>(k * L / (2 * pi));
   // state(seqN(0, N)) = 0.01 * cos(n * 2 * pi * xCoords / L);
   // state(seqN(N, N)) = 0;
+  
+  auto periodic_smoothing = [](const long long int window, const Equation::Vector &field)->Equation::Vector {
+    using namespace Eigen;
+    Equation::Vector extended_field(3 * field.size());
 
+    extended_field(seqN(0 * field.size(), field.size())) = field;
+    extended_field(seqN(1 * field.size(), field.size())) = field;
+    extended_field(seqN(2 * field.size(), field.size())) = field;
+
+    Equation::Vector smoothed_field(field.size());
+    for(long long int idx = 0; idx < field.size(); ++idx) {
+      smoothed_field(idx) = extended_field(seqN(field.size() + idx - window, 2 * window)).mean();
+    }
+    return smoothed_field;
+  };
+
+  const long long int window = 200;
   auto rho = eqn.compute_energy_density(state, 0);
   auto q = eqn.compute_momentum_density(state, 0);
+  auto p = eqn.compute_pressure(state, 0);
   write_to_file(state, dir + "state.dat");
   write_to_file(rho, dir + "rho.dat");
   write_to_file(q, dir + "q.dat");
+  write_to_file(p, dir + "p.dat");
+  write_to_file(periodic_smoothing(window, rho), dir + "rho_smoothed.dat");
+  write_to_file(periodic_smoothing(window, q), dir + "q_smoothed.dat");
+  write_to_file(periodic_smoothing(window, p), dir + "p_smoothed.dat");
 
   typedef SineGordon1DBooster Booster;
   Eigen::ArrayXd tau = 2 * cos(2 * pi * xCoords / L) * (L / (2 * pi));
@@ -141,13 +167,18 @@ int main(int argc, char **argv){
 
   rho = eqn.compute_energy_density(state, 0);
   q = eqn.compute_momentum_density(state, 0);
+  p = eqn.compute_pressure(state, 0);
   write_to_file(state, dir + "state_boosted.dat");
   write_to_file(rho, dir + "rho_boosted.dat");
   write_to_file(q, dir + "q_boosted.dat");
+  write_to_file(p, dir + "p_boosted.dat");
+  write_to_file(periodic_smoothing(window, rho), dir + "rho_boosted_smoothed.dat");
+  write_to_file(periodic_smoothing(window, q), dir + "q_boosted_smoothed.dat");
+  write_to_file(periodic_smoothing(window, p), dir + "p_boosted_smoothed.dat");
 
   write_to_file(tau, dir + "tau.dat");
   write_to_file(xCoords, dir + "x_coords.dat");
-}  
+}
 
 void generate_ic_kg(void)
 {
