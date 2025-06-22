@@ -913,7 +913,7 @@ void solve_field_equation(void)
 			 std::cout << "total number of steps = " << num_steps << '\n';
 		       } );
   
-  write_vector_to_file(workspace.t_list, dir + "t_list.dat");
+  write_to_file(workspace.t_list, dir + "t_list.dat");
   
   
   // Optional: save the final state.

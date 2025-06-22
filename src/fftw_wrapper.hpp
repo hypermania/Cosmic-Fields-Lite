@@ -25,15 +25,13 @@ struct fftwWrapper {
   explicit fftwWrapper(int N_); /*!< Constructor for grid size \f$ N \f$. */
   ~fftwWrapper();
 
+  // Eigen::VectorXd execute_d2z(Eigen::VectorXd &in);
+  
   /*!
     \brief (Double floating point) Real to complex transform.
     \param in A real vector of size \f$ N^3 \f$.
     \return A real vector of size \f$ 2 N^2 (N/2+1) \f$ (or a complex vector of size \f$ N^2 (N/2+1) \f$), containing the discrete Fourier transform of input.
   */
-  // Eigen::VectorXd execute_d2z(Eigen::VectorXd &in);
-
-
-  // TODO: Make this polymorphic for double and float.
   template<typename Derived>
   Eigen::VectorXd execute_d2z(Eigen::PlainObjectBase<Derived> &in){
     Eigen::VectorXd out(N * N * (N / 2 + 1) * 2);

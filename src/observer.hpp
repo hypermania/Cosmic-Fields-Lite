@@ -97,7 +97,7 @@ struct ConstIntervalObserver {
 	  Vector varphi_plus_spectrum = compute_mode_power_spectrum(N, L, m, a_t, workspace.state, workspace.fft_wrapper);
 	  Eigen::VectorXd varphi_plus_spectrum_out(varphi_plus_spectrum.size());
 	  copy_vector(varphi_plus_spectrum_out, varphi_plus_spectrum);
-	  write_VectorXd_to_filename_template(varphi_plus_spectrum_out, dir + "varphi_plus_spectrum_%d.dat", idx);
+	  write_to_filename_template(varphi_plus_spectrum_out, dir + "varphi_plus_spectrum_%d.dat", idx);
 	}
 
       if constexpr(save_density_spectrum) {
@@ -105,7 +105,7 @@ struct ConstIntervalObserver {
 	  Vector rho_spectrum = compute_power_spectrum(N, rho, workspace.fft_wrapper);
 	  Eigen::VectorXd rho_spectrum_out(rho_spectrum.size());
 	  copy_vector(rho_spectrum_out, rho_spectrum);
-	  write_VectorXd_to_filename_template(rho_spectrum_out, dir + "rho_spectrum_%d.dat", idx);
+	  write_to_filename_template(rho_spectrum_out, dir + "rho_spectrum_%d.dat", idx);
 	}
       
       if constexpr(save_density) {
@@ -115,8 +115,8 @@ struct ConstIntervalObserver {
 	  Eigen::VectorXd rho_slice = rho_copy.head(N*N); // Save the density for a = 0 slice.
 	  Eigen::VectorXd rho_axis_average = rho_copy.reshaped(N*N, N).rowwise().mean(); // Save the density overaged over a axis.
 
-	  write_VectorXd_to_filename_template(rho_slice, dir + "rho_slice_%d.dat", idx);
-	  write_VectorXd_to_filename_template(rho_axis_average, dir + "rho_axis_average_%d.dat", idx);
+	  write_to_filename_template(rho_slice, dir + "rho_slice_%d.dat", idx);
+	  write_to_filename_template(rho_axis_average, dir + "rho_axis_average_%d.dat", idx);
 	}
       
       workspace.t_list.push_back(t);
