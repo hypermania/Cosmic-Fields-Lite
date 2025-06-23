@@ -180,6 +180,8 @@ inline auto perturbed_grf_and_comoving_curvature_fft =
     auto fft_wrapper = fftwWrapper(param.N);
     Eigen::VectorXd Psi = compute_field_with_scaled_fourier_modes(param.N, param.L, R, kernel, fft_wrapper);
 
+
+    
     // Calculate \varphi^2, \dot{\varphi}^2 perturbations as a multiple of Psi.
     // See Eqn (3.17) of paper.
     // There is an extra factor of 0.5 in front since "generate_inhomogeneous_gaussian_random_field" use exp(2\Psi) ~ 1 + 2 \Psi for variance perturbation convention.
@@ -191,6 +193,8 @@ inline auto perturbed_grf_and_comoving_curvature_fft =
     Spectrum P_dtf = to_deriv_spectrum(param.m, P_f);
     Eigen::VectorXd varphi = generate_inhomogeneous_gaussian_random_field(param.N, param.L, alpha_varphi_sqr * Psi, P_f);
     Eigen::VectorXd dt_varphi = generate_inhomogeneous_gaussian_random_field(param.N, param.L, alpha_dot_varphi_sqr * Psi, P_dtf);
+
+
     
     auto &state = workspace.state;
     state.resize(varphi.size() + dt_varphi.size());

@@ -49,7 +49,7 @@ int main(int argc, char **argv){
   
   // Solve scalar field equation in a background of comoving curvature perturbation.
   // Save output to output/Growth_and_FS/
-  // solve_field_equation();
+  solve_field_equation();
 
   // Optional: Use WKB solution to extend the simulation.
   //generate_wkb_solutions();
@@ -58,7 +58,7 @@ int main(int argc, char **argv){
   // generate_ic_kg();
   // generate_ic_proca();
   // generate_ic_sp();
-  generate_ic_sg();
+  // generate_ic_sg();
 }  
 
 void generate_ic_sg(void)
@@ -607,10 +607,10 @@ void solve_field_equation(void)
      .t1 = 1.0 / (2 * param.H1),
      // Start and end time for numerical integration, and time interval between saves
      .t_start = param.t1,
-     .t_end = param.t_start + (pow(3.5 / param.a1, 2) - 1.0) / (2 * param.H1),
+     .t_end = param.t_start + (pow(5.0 / param.a1, 2) - 1.0) / (2 * param.H1),
      .t_interval = 49.99, // Save a snapshot every t_interval
      // Numerical method parameter
-     .delta_t = 0.5, // Time step for numerical integration
+     .delta_t = 0.1, // Time step for numerical integration
      // Psi approximation parameter
      .M = 128 // Lattice points for storing / computing Psi
     };
@@ -621,12 +621,12 @@ void solve_field_equation(void)
   // Choose an equation to solve.
   // Here we solve a scalar field equation with background metric perturbations.
   // Also see CudaApproximateComovingCurvatureEquationInFRW, which is a CUDA implementation of the same equation.
-  typedef ComovingCurvatureEquationInFRW Equation;
-  //typedef CudaApproximateComovingCurvatureEquationInFRW Equation;
+  // typedef ComovingCurvatureEquationInFRW Equation;
+  typedef CudaApproximateComovingCurvatureEquationInFRW Equation;
   typedef typename Equation::Workspace Workspace;
   typedef typename Equation::State State;
 
-  
+
   // Initialize the workspace given params and a procedure for setting initial conditions.
   // The initialization procedure is described in Sec.3 of the paper.
   Workspace workspace(param, perturbed_grf_and_comoving_curvature_fft);
@@ -634,7 +634,6 @@ void solve_field_equation(void)
   
   // The equation object.
   Equation eqn(workspace);
-
   
   // Choose what to save in the course of simulation.
   // Here we save the field spectrum, density spectrum, and 2D density slices.

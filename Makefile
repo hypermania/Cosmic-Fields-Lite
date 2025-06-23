@@ -14,8 +14,9 @@ FFTW_INCLUDE_DIR := "/usr/local/include/"
 #FFTW_INCLUDE_DIR := "/opt/homebrew/Cellar/fftw/3.3.10_1/include/"
 
 # Directory for libfftw3.a
-FFTW_LIBRARY_DIR := "/usr/local/lib/"
+# FFTW_LIBRARY_DIR := "/usr/local/lib/"
 #FFTW_LIBRARY_DIR := "/opt/homebrew/lib/"
+FFTW_LIBRARY_DIR := "/home/hypermania/Hacks/fftw-3.3.10/.libs/"
 
 ##################################################################
 # CUDA related settings
@@ -37,7 +38,7 @@ NVCCFLAGS   := -m64 --threads 2
 
 # Gencode arguments
 # Use 86 for RTX 3060 Ti. Change this for other GPUs / CUDA Toolkit version.
-SMS ?= 86 # 50 52 60 61 70 75 80 86
+SMS ?= 89 # 50 52 60 61 70 75 80 86
 
 ifeq ($(SMS),)
 	$(info >>> WARNING - no SM architectures have been specified - waiving sample <<<)
@@ -67,7 +68,7 @@ program_CXX_ASMS := ${program_CXX_SRCS:.cpp=.s}
 
 program_OBJS := $(program_C_OBJS) $(program_CXX_OBJS)
 program_INCLUDE_DIRS := "external"
-program_LIBRARY_DIRS :=
+program_LIBRARY_DIRS := $(FFTW_LIBRARY_DIR)
 program_LIBRARIES := fftw3 m dl
 
 
@@ -92,7 +93,8 @@ endif
 # Compiler flags
 CXXFLAGS += $(foreach includedir,$(program_INCLUDE_DIRS),-I$(includedir))
 CXXFLAGS += -std=c++20 -Wall -DEIGEN_NO_CUDA #-DEIGEN_NO_DEBUG
-CXXFLAGS += -march=native -pthread
+#CXXFLAGS += -march=native -pthread
+CXXFLAGS += -march=alderlake -pthread
 CXXFLAGS += -O3 -ffast-math
 
 NVCC_OPTIMIZE_FLAGS := -use_fast_math # -Xptxas -O3,-v
