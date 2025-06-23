@@ -65,7 +65,6 @@ SchrodingerPoissonEquation::Vector SchrodingerPoissonEquation::compute_momentum_
   const double h_inv = N / L;
   const double a_t = workspace.cosmology.a(t);
   //  const double inv_h_sqr = 1.0 / ((L / N) * (L / N));
-  // const double inv_two_h = 1.0 / (2.0 * L / N);
   const long long int lattice_size = N * N * N;
 
   VectorXd q(3 * lattice_size);

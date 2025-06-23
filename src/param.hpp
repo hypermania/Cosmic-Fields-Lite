@@ -35,6 +35,43 @@ struct SampleParam {
   double t1; /*!< coordinate time parameter \f$ t_1 \f$  (For radiation domination, \f$ a(t) = a_1 (1 + 2 H_1 (t-t_1))^{1/2} \f$, \f$ H(t) = H_1 (1 + 2 H_1 (t-t_1))^{-1} \f$ .) */
 };
 
+
+/*!
+  \brief A unified parameter type used for a variety of equations.
+
+  The meaning of the parameters here depends on the equation in question.
+*/
+struct MyParam {
+  // lattice params
+  long long int N;
+  double L;
+  // ULDM params
+  double m;
+  double lambda;
+  double f_a;
+  double k_ast;
+  double k_Psi;
+  double varphi_std_dev;
+  double Psi_std_dev;
+  // FRW metric params
+  double a1;
+  double H1;
+  double t1;
+  // Solution record params
+  double t_start;
+  double t_end;
+  double t_interval;
+  // Numerical method parameter
+  double delta_t;
+  // Psi approximation parameter (the size of the grid storing Psi)
+  long long int M;
+  // Params for adding fluctuations on a homogeneous background
+  double f;
+  double delta_varphi_std_dev;
+  double k_delta_varphi;
+};
+
+
 /*!
   \brief Pretty prints a parameter struct T.
 */

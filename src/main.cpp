@@ -35,37 +35,6 @@
 #include "fdm3d_cuda.cuh"
 #endif
 
-// The struct containing parameters for the simulation.
-// You can add new params for other simulations.
-struct MyParam {
-  // lattice params
-  long long int N;
-  double L;
-  // ULDM params
-  double m;
-  double lambda;
-  double f_a;
-  double k_ast;
-  double k_Psi;
-  double varphi_std_dev;
-  double Psi_std_dev;
-  // FRW metric params
-  double a1;
-  double H1;
-  double t1;
-  // Solution record params
-  double t_start;
-  double t_end;
-  double t_interval;
-  // Numerical method parameter
-  double delta_t;
-  // Psi approximation parameter (the size of the grid storing Psi)
-  long long int M;
-  // Params for adding fluctuations on a homogeneous background
-  double f;
-  double delta_varphi_std_dev;
-  double k_delta_varphi;
-};
 
 void solve_field_equation(void);
 void generate_wkb_solutions(void);
@@ -73,7 +42,7 @@ void generate_ic_kg(void);
 void generate_ic_proca(void);
 void generate_ic_sp(void);
 void generate_ic_sg(void);
-void check_proca_q(void);
+
 
 int main(int argc, char **argv){
   // Runs the simulation described in Section 4.2.2 of paper.
@@ -85,9 +54,9 @@ int main(int argc, char **argv){
   // Optional: Use WKB solution to extend the simulation.
   //generate_wkb_solutions();
 
+  // Generate initial conditions
   // generate_ic_kg();
   // generate_ic_proca();
-  // check_proca_q();
   // generate_ic_sp();
   generate_ic_sg();
 }  
@@ -119,16 +88,14 @@ void generate_ic_sg(void)
   typedef SineGordon1DEquation::State State;
   Equation eqn(param);
   Equation::State state(2 * N);
-  
+
+  // Initialize breather solutions with frequency omega at x0 and x1
   Equation::Vector xCoords = Eigen::ArrayXd::LinSpaced(N, 0, (L * (N - 1))  / N);
   state(seqN(0, N)) = 0;
   state(seqN(N, N)) = ((4)*((pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000))*(1/cosh(((xCoords)+((-1)*(x0)))*(pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000))))))+((4)*((pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000))*(1/cosh(((xCoords)+((-1)*(x1)))*(pow((1)+((-1)*(pow(omega,2))),0.500000000000000000000000000000))))));
-  
-  // const double k = 10 * 3.62;
-  // const long long int n = static_cast<long long int>(k * L / (2 * pi));
-  // state(seqN(0, N)) = 0.01 * cos(n * 2 * pi * xCoords / L);
-  // state(seqN(N, N)) = 0;
-  
+
+  // Function to coarse grain a field over the periodic grid.
+  // At index idx, averages the field over [idx - window, idx + window].
   auto periodic_smoothing = [](const long long int window, const Equation::Vector &field)->Equation::Vector {
     using namespace Eigen;
     Equation::Vector extended_field(3 * field.size());
@@ -301,43 +268,6 @@ void generate_ic_kg(void)
     write_to_file(q_old, dir + "q.dat");
   }
 
-  // Eigen::VectorXd state_new = boost_klein_gordon_field(param.N, param.L, param.m, tau, workspace.state, 0.01);
-  
-  // {
-  //   Eigen::VectorXd varphi = state_new.head(N*N*N);
-  //   Eigen::VectorXd dt_varphi = state_new.tail(N*N*N);
-  //   write_to_file(varphi, dir + "varphi.dat");
-  //   write_to_file(dt_varphi, dir + "dt_varphi.dat");
-  // }
-  
-  // {
-  //   Eigen::VectorXd rho_old = Equation::compute_energy_density(workspace, 0);
-  //   write_to_file(compute_mode_power_spectrum(N, param.L, param.m, 1.0, workspace.state, workspace.fft_wrapper), dir + "varphi_spectrum.dat");
-  //   write_to_file(compute_power_spectrum(N, rho_old, workspace.fft_wrapper), dir + "rho_spectrum.dat");
-  //   write_to_file(rho_old, dir + "rho.dat");
-  // }
-
-  // Eigen::VectorXd varphi;
-  // Eigen::VectorXd dt_varphi;
-  // {
-  //   Workspace workspace(param, unperturbed_grf);
-  //   long long int field_size = workspace.state.size() / 2;
-  //   varphi = workspace.state.head(field_size);
-  //   dt_varphi = workspace.state.tail(field_size);
-  // }
-  
-  // Eigen::VectorXd varphi(N*N*N);
-  // Eigen::VectorXd dt_varphi(N*N*N);
-
-  // for(int a = 0; a < N; ++a){
-  //   for(int b = 0; b < N; ++b){
-  //     for(int c = 0; c < N; ++c){
-  // 	varphi(IDX_OF(N, a, b, c)) = cos(2 * std::numbers::pi * c / N);
-  // 	dt_varphi(IDX_OF(N, a, b, c)) = 1;
-  //     }
-  //   }
-  // }
-
 }
 
 void generate_ic_proca(void)
@@ -388,23 +318,6 @@ void generate_ic_proca(void)
   typedef typename Equation::State State;
 
   const long long int N = param.N;
-  
-  // Eigen::VectorXd tau(N*N*N);
-  // for(int a = 0; a < N; ++a){
-  //   for(int b = 0; b < N; ++b){
-  //     for(int c = 0; c < N; ++c){
-  // 	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * std::numbers::pi * c / N);
-  //     }
-  //   }
-  // }
-
-
-
-  // auto proca_initializer = [](const auto param, auto &workspace) {
-  //   const long long int N = param.N;
-  //   const long long int lattice_size = N*N*N;
-  //   workspace.state = Eigen::VectorXd::Zero(6 * lattice_size);
-  // };
   
   Workspace workspace(param, unperturbed_proca_grf);
 
@@ -503,119 +416,9 @@ void generate_ic_proca(void)
     write_to_file(q_old, dir + "q.dat");
   }
 
-  // auto At = Equation::compute_At(workspace, 0);
-  // std::cout << "before : " << At.squaredNorm() / pow(param.N, 3) << std::endl;
 
-  // Eigen::VectorXd At_predicted(N*N*N);
-  // for(int a = 0; a < N; ++a){
-  //   for(int b = 0; b < N; ++b){
-  //     for(int c = 0; c < N; ++c){
-  // 	workspace.state(5*N*N*N + IDX_OF(N, a, b, c)) = cos(2 * std::numbers::pi * c / N);
-
-  // 	double k_IR = 2 * pi / param.L;
-  // 	At_predicted(IDX_OF(N, a, b, c)) = sin(2 * std::numbers::pi * c / N) * k_IR / (k_IR * k_IR + param.m * param.m);
-  //     }
-  //   }
-  // }
-  
-  // At = Equation::compute_At(workspace, 0);
-  // std::cout << "after : " << At.squaredNorm() / pow(param.N, 3) << std::endl;
-  // std::cout << "difference : " << (At - At_predicted).squaredNorm() / pow(param.N, 3) << std::endl;
-  // return;
-
-  // Spectrum P = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.varphi_std_dev, param.k_ast, 0);
-  // Eigen::VectorXd random_proca = generate_gaussian_random_proca_field(param.N, param.L, P);
-  
-  /*
-  Eigen::VectorXd random_proca(3*N*N*N);
-  for(int a = 0; a < N; ++a){
-    for(int b = 0; b < N; ++b){
-      for(int c = 0; c < N; ++c){
-	random_proca(1*N*N*N + IDX_OF(N, a, b, c)) = - cos(2 * std::numbers::pi * c / N);
-      }
-    }
-  }
-  // random_proca.head(N*N*N) = 
-  ProcaTransverseProjector projector(N);
-
-  std::cout << "before : " << random_proca.squaredNorm() / pow(param.N, 3) << std::endl;
-  projector.proca_project_to_transverse(random_proca, workspace.fft_wrapper);
-  std::cout << "after : " << random_proca.squaredNorm() / pow(param.N, 3) << std::endl;
-  projector.proca_project_to_transverse(random_proca, workspace.fft_wrapper);
-  std::cout << "check idempotence : " << random_proca.squaredNorm() / pow(param.N, 3) << std::endl;
-
-  return;
-  */
-  
 }
 
-void check_proca_q(void)
-{
-  using namespace std::numbers;
-  // Set the PRNG seed.
-  RandomNormal::set_generator_seed(0);
-
-  // Set the directory for output.
-  const std::string dir = "/media/hypermania/Drive_001/FreeStreamingULDM/proca_IC/";
-  prepare_directory_for_output(dir);
-  
-  // Set parameters for the simulation.
-  MyParam param
-    {
-      .N = 384, // Lattice points per axis
-      .L = 384 * 0.05, // Size of the box
-      // ULDM params
-      .m = 1.0, // Mass of scalar field
-      .lambda = 0, // Lambda phi^4 coupling strength
-      //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
-      .k_ast = 5.0, // Characteristic momentum
-      .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
-      .varphi_std_dev = 1.0, // Standard deviation of field
-      .Psi_std_dev = 0.1, // Standard deviation of metric perturbation Psi
-      // FRW metric params
-      .a1 = 1.0,
-      .H1 = 0.05,
-      .t1 = 1.0 / (2 * param.H1),
-      // Start and end time for numerical integration, and time interval between saves
-      .t_start = param.t1,
-      .t_end = param.t_start + (pow(3.5 / param.a1, 2) - 1.0) / (2 * param.H1),
-      .t_interval = 49.99, // Save a snapshot every t_interval
-      // Numerical method parameter
-      .delta_t = 0.5, // Time step for numerical integration
-      // Psi approximation parameter
-      .M = 128 // Lattice points for storing / computing Psi
-    };
-  print_param(param);
-  save_param_for_Mathematica(param, dir);
-
-  
-  typedef ProcaEquation Equation;
-  typedef typename Equation::Workspace Workspace;
-  typedef typename Equation::State State;
-
-  const long long int N = param.N;
-  const long long int lattice_size = N*N*N;
-
-  // Eigen::VectorXd rho_spectrum = load_VectorXd_from_file(dir + "rho_spectrum_old.dat");
-  // const double rho_bar = sqrt(rho_spectrum[0] / (lattice_size * lattice_size));
-  
-  Eigen::VectorXd diff_q_0 = load_VectorXd_from_file(dir + "diff_q_0.dat");
-  Eigen::VectorXd diff_q_1 = load_VectorXd_from_file(dir + "diff_q_1.dat");
-  Eigen::VectorXd diff_q_2 = load_VectorXd_from_file(dir + "diff_q_2.dat");
-  
-  std::cout << "point 0 \n";
-
-
-  auto fft_wrapper = fftwWrapper(N);
-  Eigen::VectorXd diff_q_spectrum(3*(N/2)*(N/2)+1);
-  diff_q_spectrum.array() = 0;
-  
-  diff_q_spectrum += compute_power_spectrum(N, diff_q_0, fft_wrapper);
-  diff_q_spectrum += compute_power_spectrum(N, diff_q_1, fft_wrapper);
-  diff_q_spectrum += compute_power_spectrum(N, diff_q_2, fft_wrapper);
-  write_to_file(diff_q_spectrum, dir + "diff_q_spectrum.dat");
-  
-}
 
 void generate_ic_sp(void)
 {
@@ -632,34 +435,6 @@ void generate_ic_sp(void)
   prepare_directory_for_output(dir);
 
   
-  // Set parameters for the simulation.
-  // We use units in which a_eq = 1, H_eq = 1.
-  // MyParam param
-  //   {
-  //     .N = 384, // Lattice points per axis
-  //     .L = 25.132741228718345908, // Size of the box
-  //     // ULDM params
-  //     .m = 1e1, // Mass of scalar field
-  //     .lambda = 0, // Lambda phi^4 coupling strength
-  //     //.f_a = 30.0, // Not relevant for ComovingCurvatureEquationInFRW
-  //     .k_ast = 16.0, // Characteristic momentum
-  //     .k_Psi = 1.0, // Not relevant for ComovingCurvatureEquationInFRW
-  //     .varphi_std_dev = 1.0, // Standard deviation of field
-  //     .Psi_std_dev = 0.1, // Standard deviation of metric perturbation Psi
-  //     // FRW metric params
-  //     .a1 = 64.0,
-  //     .H1 = 1.0 / 512.0,
-  //     .t1 = 2.0 / (3 * param.H1),
-  //     // Start and end time for numerical integration, and time interval between saves
-  //     .t_start = param.t1,
-  //     .t_end = param.t_start + (pow(3.5 / param.a1, 2) - 1.0) / (2 * param.H1),
-  //     .t_interval = 49.99, // Save a snapshot every t_interval
-  //     // Numerical method parameter
-  //     .delta_t = 0.5, // Time step for numerical integration
-  //     // Psi approximation parameter
-  //     .M = 128 // Lattice points for storing / computing Psi
-  //   };
-
   // Set parameters for the simulation.
   // We use units in which a_eq = 1, H_eq = 1.
   MyParam param
@@ -741,16 +516,6 @@ void generate_ic_sp(void)
     write_to_file(q_old, dir + "q_old.dat");
   }
 
-  
-  // Eigen::VectorXd tau(N*N*N);
-  // for(int a = 0; a < N; ++a){
-  //   for(int b = 0; b < N; ++b){
-  //     for(int c = 0; c < N; ++c){
-  // 	tau(IDX_OF(N, a, b, c)) = -0.5 * cos(2 * 2 * std::numbers::pi * c / N) * 0.05;
-  //     }
-  //   }
-  // }
-  // workspace.state = boost_sp_field(param.N, param.L, param.m, tau, workspace.state);
   
   workspace.state = boost_sp_field(param.N, param.L, param.m, workspace.tau, workspace.state);
   

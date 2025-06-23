@@ -118,4 +118,6 @@ struct ProcaEquation {
   static Vector compute_momentum_density(Workspace &workspace, const double t);
 };
 
+void check_proca_q(void);
+
 #endif
