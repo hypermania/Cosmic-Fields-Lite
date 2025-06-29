@@ -2,6 +2,13 @@
 
 **Cosmic-Fields-Lite** is a lightweight and modular framework for performing field simulations in cosmology. This framework was used for studying free-streaming of wave dark matter; see [arXiv:2408.05591](https://arxiv.org/abs/2408.05591) for the study and these [youtube videos](https://www.youtube.com/playlist?list=PLecJrnvnk5c7Iaqi-Wq7xvqk1Msgxn5pk) for visualization. The codebase contains several field equations on both CPU and GPU (CUDA), offering choices for numerical methods and simulation outputs.
 
+## Update 2025-06-29
+* The codebase is now incorporated with some example implementations of "spatially varying boost". Files `proca.hpp`, `sp.hpp`, `sine_gordon_1d.hpp` and `field_booster.hpp` contain the majority of the updates. See paper [arXiv:XXXX:XXXXX](https://arxiv.org/abs/) for more details.
+* Made `workspace.hpp` and `eigen_operations.hpp` polymorphic in Eigen objects. For example, `Eigen::ArrayXd` is now supported as workspace state vectors as `WorkspaceGeneric<ArrayXd, ArrayXd>`.
+* Replaced `write_VectorXd_to_file`, `write_VectorXd_to_filename_template`, `write_vector_to_file` and `write_data_to_file` with polymorphic `write_to_file` and `write_to_filename_template`.
+* In `fftw_wrapper.hpp`, function `execute_d2z` is now polymorphic in Eigen objects.
+
+
 ## Overview
 This codebase aims to be:
 
@@ -80,8 +87,14 @@ I also included header-only libraries [Eigen 3.4.0](https://eigen.tuxfamily.org)
 
 **Note: If you have a CUDA compatible NVIDIA GPU, using CUDA is highly recommended. In our case, it produced more than 10 times speedup.**
 
+### Cross-compilation
+If you want to compile the project for a different platform, pay attention to these settings:
+
+* In `Makefile`, change `-march=native` and `SMS` to your target platform.
+* Make sure that the statically linked libraries (e.g., `fftw3`) are compiled for your target platform. You may have to change settings like `FFTW_LIBRARY_DIR` in `Makefile`.
+
 ## Documentation
-LaTeX version of documentation is in `documentation.pdf`. If you have doxygen, you can also build an html version by running `doxygen doxygen.config`.
+LaTeX version of documentation is in `documentation.pdf`. If you have doxygen, you can also build an html version by running `doxygen doxygen.config`. If you have pdflatex, documents (including `documentation.pdf`) can be made by `make doc`.
 
 ## Convenience utilities for visualizing output
 Two Mathematica notebooks `spectra.nb`, `snapshots.nb` and a python script `plot_util.py` are included for visualizing outputs from the program. By default, running the entire notebook / python script will read sample data from `output/Growth_and_FS` and produce spectra and snapshots. If you generate new outputs from the program, you just need to change `dir` or `project_dir` variables to the new output directory.

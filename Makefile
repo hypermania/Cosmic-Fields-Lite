@@ -131,6 +131,12 @@ $(device_link_OBJ): $(program_CU_OBJS)
 
 asm: $(program_CXX_ASMS)
 
+doc: $(program_H_SRCS) $(program_HPP_SRCS) $(program_CUH_SRCS)
+	doxygen doxygen.config
+	cd latex
+	make -C latex pdf
+	cp latex/refman.pdf documentation.pdf
+
 clean:
 	$(RM) $(program_NAME)
 	$(RM) $(program_OBJS)
