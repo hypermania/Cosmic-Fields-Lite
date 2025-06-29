@@ -1,37 +1,24 @@
-/*
-  Tools related to 1D Sine-Gordon fields.
+/*!
+  \file sine_gordon_1d.hpp
+  \author Siyang Ling
+  \brief Tools related to 1D Sine-Gordon fields.
+
+  This is a standalone header module for 1D Sine-Gordon fields.
+  Implemented functionalities include the 1D Sine-Gordon equation (on a periodic interval), functions to compute the stress-energy of the field (see SineGordon1DEquation), and the spatially varying boost on the field (see SineGordon1DBooster).
 */
 #ifndef SINE_GORDON_1D_HPP
 #define SINE_GORDON_1D_HPP
 
 #include "Eigen/Dense"
-// #include "random_field.hpp"
-// #include "dispatcher.hpp"
-// #include "workspace.hpp"
-// #include "fdm3d.hpp"
 
 struct SineGordonParam {
-  long long int N;
-  double L;
+  long long int N; /*!< Number of lattice points of the periodic interval. */
+  double L; /*!< Length of the periodic interval. */
   double v;
 };
 
-// inline auto sg_kink =
-//   [](const auto param) {
-//     const long long int lattice_size = param.N * param.N * param.N;
-    
-//     Spectrum P_f = power_law_with_cutoff_given_amplitude_3d(param.N, param.L, param.varphi_std_dev, param.k_ast, 0);
-
-//     // The code is CPU only
-//     auto &state = workspace.state;
-//     state = generate_gaussian_random_sp_field(param.N, param.L, P_f);
-
-//     workspace.Psi.resize(lattice_size);
-//     workspace.Psi.array() = 0;
-//   };
-
 /*! 
-  \brief The SineGordon1D equation, \f$ \ddot{\varphi} - \nabla^2 \varphi + m^2 \vec{A} = 0 \f$.
+  \brief The 1D Sine-Gordon system, \f$ \partial_t^2 u - \partial_x^2 u + \sin(u) = 0 \f$.
 */
 struct SineGordon1DEquation {
   typedef Eigen::ArrayXd State;
@@ -44,7 +31,12 @@ struct SineGordon1DEquation {
   // SineGordon1DEquation(Workspace &workspace_) : workspace(workspace_) {}
   SineGordon1DEquation(Param param_) : param(param_) {}
 
-  // TODO
+  /*!
+    \brief The function called by odeint library.
+    \param[in] x The current state of the Sine-Gordon system, in the form of a length \f$2N\f$ ArrayXd. Convention: [u, dudt].
+    \param[out] dxdt The time derivative, dxdt of the system.
+    \param t The current time parameter.
+  */
   void operator()(const State &x, State &dxdt, const double) {
     using namespace Eigen;
     const long long int N = param.N;
@@ -62,6 +54,9 @@ struct SineGordon1DEquation {
 
   }
 
+  /*!
+    \brief Given the current field state, returns the pointwise energy density of a Sine-Gordon system.
+  */
   Vector compute_energy_density(const State &x, const double t) {
     using namespace Eigen;
     const long long int N = param.N;
@@ -77,6 +72,9 @@ struct SineGordon1DEquation {
     return rho;
   }
   
+  /*!
+    \brief Given the current field state, returns the pointwise momentum density of a Sine-Gordon system.
+  */
   Vector compute_momentum_density(const State &x, const double t) {
     using namespace Eigen;
     const long long int N = param.N;
@@ -92,7 +90,10 @@ struct SineGordon1DEquation {
 
     return q;
   }
-
+  
+  /*!
+    \brief Given the current field state, returns the pointwise pressure density of a Sine-Gordon system.
+  */
   Vector compute_pressure(const State &x, const double t) {
     using namespace Eigen;
     const long long int N = param.N;
@@ -110,10 +111,6 @@ struct SineGordon1DEquation {
     return p;
   }
 
-  
-  // static Vector compute_energy_density(Workspace &workspace, const double t);
-  
-  // static Vector compute_momentum_density(Workspace &workspace, const double t);
 };
 
 struct SineGordon1DBooster {
@@ -128,7 +125,6 @@ struct SineGordon1DBooster {
   // SineGordon1DEquation(Workspace &workspace_) : workspace(workspace_) {}
   SineGordon1DBooster(Param param_, const Vector &tau_) : param(param_), tau(tau_) {}
 
-  // TODO
   void operator()(const State &x, State &dxdt, const double) {
     using namespace Eigen;
     const long long int N = param.N;

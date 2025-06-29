@@ -13,10 +13,10 @@ HOST_COMPILER ?= g++
 FFTW_INCLUDE_DIR := "/usr/local/include/"
 #FFTW_INCLUDE_DIR := "/opt/homebrew/Cellar/fftw/3.3.10_1/include/"
 
-# Directory for libfftw3.a
-# FFTW_LIBRARY_DIR := "/usr/local/lib/"
-#FFTW_LIBRARY_DIR := "/opt/homebrew/lib/"
-FFTW_LIBRARY_DIR := "/home/hypermania/Hacks/fftw-3.3.10/.libs/"
+# Directory for libfftw3.a (static library for FFTW)
+FFTW_LIBRARY_DIR := "/usr/local/lib/"
+# FFTW_LIBRARY_DIR := "/opt/homebrew/lib/"
+# FFTW_LIBRARY_DIR := "/home/hypermania/Hacks/fftw-3.3.10/.libs/"
 
 ##################################################################
 # CUDA related settings
@@ -37,7 +37,10 @@ NVCC := $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
 NVCCFLAGS   := -m64 --threads 2
 
 # Gencode arguments
+
+# Set the Compute capability (CC) for the GPU you want to use.
 # Use 86 for RTX 3060 Ti. Change this for other GPUs / CUDA Toolkit version.
+# See https://developer.nvidia.com/cuda-gpus
 SMS ?= 89 # 50 52 60 61 70 75 80 86
 
 ifeq ($(SMS),)
@@ -93,8 +96,8 @@ endif
 # Compiler flags
 CXXFLAGS += $(foreach includedir,$(program_INCLUDE_DIRS),-I$(includedir))
 CXXFLAGS += -std=c++20 -Wall -DEIGEN_NO_CUDA #-DEIGEN_NO_DEBUG
-#CXXFLAGS += -march=native -pthread
-CXXFLAGS += -march=alderlake -pthread
+CXXFLAGS += -march=native -pthread
+# CXXFLAGS += -march=alderlake -pthread
 CXXFLAGS += -O3 -ffast-math
 
 NVCC_OPTIMIZE_FLAGS := -use_fast_math # -Xptxas -O3,-v
