@@ -2,8 +2,9 @@
 
 **Cosmic-Fields-Lite** is a lightweight and modular framework for performing field simulations in cosmology. This framework was used for studying free-streaming of wave dark matter; see [arXiv:2408.05591](https://arxiv.org/abs/2408.05591) for the study and these [youtube videos](https://www.youtube.com/playlist?list=PLecJrnvnk5c7Iaqi-Wq7xvqk1Msgxn5pk) for visualization. The codebase contains several field equations on both CPU and GPU (CUDA), offering choices for numerical methods and simulation outputs.
 
-## Update 2025-06-29
-* The codebase is now incorporated with some example implementations of "spatially varying boost". Files `proca.hpp`, `sp.hpp`, `sine_gordon_1d.hpp` and `field_booster.hpp` contain the majority of the updates. See paper [arXiv:XXXX:XXXXX](https://arxiv.org/abs/) for more details.
+## Updates 
+### 2025-06-29
+* The codebase is now incorporated with some example implementations of "spatially varying boost", an algorithm to generate field initial data with prescribed bulk velocities. Files `proca.hpp` (Proca field), `sp.hpp` (Schroedinger Poisson field), `sine_gordon_1d.hpp` (Sine Gordon equation) and `field_booster.hpp` contain the majority of the updates. See paper [arXiv:2506.23020](https://arxiv.org/abs/2506.23020) for more details.
 * Made `workspace.hpp` and `eigen_operations.hpp` polymorphic in Eigen objects. For example, `Eigen::ArrayXd` is now supported as workspace state vectors as `WorkspaceGeneric<ArrayXd, ArrayXd>`.
 * Replaced `write_VectorXd_to_file`, `write_VectorXd_to_filename_template`, `write_vector_to_file` and `write_data_to_file` with polymorphic `write_to_file` and `write_to_filename_template`.
 * In `fftw_wrapper.hpp`, function `execute_d2z` is now polymorphic in Eigen objects.
