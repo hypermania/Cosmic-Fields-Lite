@@ -13,7 +13,7 @@
 ## Overview
 This codebase aims to be:
 
-1. As fast as possible. Users should be able to write code that exhausts hardward potential within this framework.
+1. As fast as possible. Users should be able to write code that exhaust hardware potential within this framework.
 2. Easily modifiable and extensible. Users should be able to focus on physics-relevant code, such as that for setting initial conditions or the field equation.
 
 To achieve these goals, the framework is written in a modular structure. This allows users to easily switch between different initial conditions, field equations, output methods, and even between using CPUs or GPUs for computation. Users have to and only have to provide the low level implementation for the physics-relevant code. This means users have full control over optimization of core routines, and they are not limited to a specific set of provided features. This flexibility makes it easy for the user to test new ideas.
