@@ -9,3 +9,7 @@
 - How it was solved: Commit `f7a7699a` replaced raw-buffer reads with direct vector reads, added file open/read/write validation, dynamically sizes formatted filenames, declares `load_vector_from_file`, adds `make test`, and documents the codebase in `TECHNICAL_REPORT.md`.
 - How to avoid it in future: Keep binary I/O code covered by tests for round trips, missing files, malformed sizes, and long generated paths.
 - Git commit ID: `f7a7699a`
+- Problem encountered: After FFTW 3.3.10 was installed, the technical report still described the CPU build as blocked by missing `fftw3.h`; additionally, `make -j2 disable-cuda=true` exceeded this machine's compile-time memory budget while building `src/field_booster.cpp`.
+- How it was solved: Commit `3ab17f82` updated the report to record the installed FFTW path, passing `make test`, the `make -j2` memory limitation, and the successful `make -j1 disable-cuda=true` CPU link.
+- How to avoid it in future: Re-run verification after dependency changes and document the exact build parallelism that is known to pass on the current machine.
+- Git commit ID: `3ab17f82`
