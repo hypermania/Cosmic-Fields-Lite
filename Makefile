@@ -111,9 +111,15 @@ LDFLAGS += $(foreach librarydir,$(program_LIBRARY_DIRS),-L$(librarydir))
 LDLIBS += $(foreach library,$(program_LIBRARIES),-l$(library))
 
 
-.PHONY: all clean distclean
+.PHONY: all clean distclean test
 
 all: $(program_NAME)
+
+test: tests/io_test.out
+	./tests/io_test.out
+
+tests/io_test.out: tests/io_test.cpp src/io.cpp src/io.hpp
+	$(CXX) $(CXXFLAGS) -I$(src_DIR) tests/io_test.cpp src/io.cpp -o $@
 
 $(program_NAME): $(program_OBJS)
 	$(LINK.cc) $(program_OBJS) -o $(program_NAME) $(LDLIBS)
@@ -141,6 +147,7 @@ clean:
 	$(RM) $(program_NAME)
 	$(RM) $(program_OBJS)
 	$(RM) $(program_CXX_ASMS)
+	$(RM) tests/*.out
 	$(RM) $(wildcard *~)
 	$(RM) -r html latex
 
