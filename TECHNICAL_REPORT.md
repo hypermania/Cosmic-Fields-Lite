@@ -26,11 +26,7 @@ The documented CPU-only build command is:
 make -j disable-cuda=true
 ```
 
-In this environment, the full CPU build could not complete because `fftw3.h` is not installed under the configured include paths. The failure occurs before project code is fully compiled:
-
-```text
-src/fftw_wrapper.hpp:12:10: fatal error: fftw3.h: No such file or directory
-```
+In this environment, FFTW 3.3.10 is installed under `/usr/local`, which matches the Makefile defaults for `FFTW_INCLUDE_DIR` and `FFTW_LIBRARY_DIR`. The CPU executable links successfully with `make -j1 disable-cuda=true`.
 
 A focused I/O test target was added and does not require FFTW:
 
@@ -133,4 +129,10 @@ Result: passed.
 make -j2 disable-cuda=true
 ```
 
-Result: blocked by missing system FFTW headers (`fftw3.h`) in this environment.
+Result: the parallel build was killed while compiling `src/field_booster.cpp`, consistent with memory pressure on this machine rather than a source or dependency error.
+
+```sh
+make -j1 disable-cuda=true
+```
+
+Result: passed and linked `main` against `/usr/local/lib/libfftw3`.
